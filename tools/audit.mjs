@@ -66,6 +66,8 @@ const origin = new URL(BASE).origin;
    third parties; locally, no page may carry it. */
 const LIVE = !/^(localhost|127\.0\.0\.1)$/.test(new URL(BASE).hostname);
 const COUNTER = LIVE && !!CLOUDFLARE_BEACON_TOKEN;
+const hostOf = (u) => { try { return new URL(u).hostname; } catch (_) { return ''; } };
+const counterBlocked = new Set(); // pages where this machine's network refused the beacon
 // 404.html uses root-absolute paths (Pages serves it at any depth), so it is only meaningful
 // at a domain root — not on a github.io/<repo>/ staging URL.
 if (new URL(BASE).pathname !== '/') {
@@ -108,6 +110,8 @@ for (const vp of VIEWPORTS) {
       // the 404 page's own (intended) status is logged by Chrome as a failed resource
       const at = (m.location() && m.location().url) || '';
       if (pg.status === 404 && /status of 404/.test(m.text()) && at.split('#')[0] === BASE + pg.path) return;
+      // A blocked counter (ad blocker / DNS filter on THIS machine) is not a site fault: note it.
+      if (COUNTER && BEACON_HOSTS.includes(hostOf(at))) { counterBlocked.add(where); return; }
       errors.push(m.text());
     });
     page.on('pageerror', (e) => errors.push(String(e)));
@@ -212,7 +216,8 @@ for (const vp of VIEWPORTS) {
   const playCounted = playHtml.includes(BEACON_SRC);
   if (COUNTER && !playCounted) fail('play', 'visitor counter missing on play/');
   if (!LIVE && playCounted) fail('play', 'visitor counter in the local play/ build; only tools/deploy.mjs may add it');
-  rows.push({ page: 'visitor counter', viewport: LIVE ? 'live' : 'local', kb: COUNTER ? 'on' : 'off', links: '', errors: `play/ counted: ${playCounted}` });
+  rows.push({ page: 'visitor counter', viewport: LIVE ? 'live' : 'local', kb: COUNTER ? 'on' : 'off', links: '',
+    errors: `play/ counted: ${playCounted}${counterBlocked.size ? ` · blocked by this network on ${counterBlocked.size} page loads (ad blocker / DNS filter here, not a site fault)` : ''}` });
   await ctx.close();
 }
 
@@ -229,7 +234,10 @@ if (GAME) {
   const result = await page.evaluate(async () => {
     const mg = window.__mg;
     if (typeof mg.jumpToHole === 'function') mg.jumpToHole(0);
-    await new Promise((r) => setTimeout(r, 1500));
+    await new Promise((r) => setTimeout(r, 300));
+    // The hole opens with a tee animation that rejects shots (previewTimer > 0). Its length in
+    // wall time depends on the frame rate, so wait for it instead of a fixed delay.
+    for (let t = 0; t < 20000 && mg.getState().previewTimer > 0; t += 100) await new Promise((r) => setTimeout(r, 100));
     const before = { strokes: mg.getState().strokes }; // getState() is the LIVE object — copy the number now
     if (typeof mg.fireShot !== 'function') return { error: 'no fireShot on __mg', keys: Object.keys(mg).slice(0, 40) };
     let power;
