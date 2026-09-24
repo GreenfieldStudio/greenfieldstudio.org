@@ -18,7 +18,9 @@ import { cpSync, existsSync, readFileSync, readdirSync, rmSync, statSync, writeF
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
+import { strictOptions } from './lib/args.mjs';
 
+strictOptions(['from']);
 const SITE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (name, def) => {
   const i = process.argv.indexOf(`--${name}`);

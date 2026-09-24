@@ -20,6 +20,9 @@ import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadPlaywright } from './lib/playwright.mjs';
 import { CLOUDFLARE_BEACON_TOKEN, BEACON_SRC, BEACON_HOSTS } from './analytics.mjs';
+import { strictOptions } from './lib/args.mjs';
+
+strictOptions(['url', 'shots', 'game', 'base']);
 
 const SITE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (name, def) => {

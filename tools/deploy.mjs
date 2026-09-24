@@ -15,6 +15,9 @@ import { execFileSync } from 'node:child_process';
 import { dirname, join, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CLOUDFLARE_BEACON_TOKEN as TOKEN, BEACON_SRC, PRIVACY_MARKER, beaconTag, countsPage, tokenLooksValid } from './analytics.mjs';
+import { strictOptions } from './lib/args.mjs';
+
+strictOptions(['push', 'staging']);
 
 const SITE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(SITE, '.deploy');
