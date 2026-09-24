@@ -7,8 +7,9 @@ and no runtime dependencies. The game at `/play/` is the Minigolf Pro **default 
 the same one itch.io serves, copied in by a script.
 
 ```
-index.html            studio home: hero, the play stage, the studio, contact
+index.html            studio home: hero, the play stage, the studio, latest journal entry, contact
 minigolf-pro/         the game's page
+journal/              devlog: index, one folder per post, feed.xml (Atom)
 press/                press kit (press/files/ + the zip are generated)
 privacy/              privacy note for the site; links the game's own policy
 404.html              "Out of bounds." (root-absolute paths: Pages serves it at any depth)
@@ -30,6 +31,17 @@ tools/                everything below
 | publish | `npm run deploy` (dry run), then `npm run deploy -- --push` |
 | check the live site | `node tools/audit.mjs --url https://greenfieldstudio.org/ --game` |
 | rebuild images/video | `npm run media` (reads `../minigolf-pro/branding`; set `MINIGOLF_REPO` if elsewhere) |
+| hole screenshots for a post | `node tools/capture-holes.mjs 36:asteroid-field` (0-based campaign index; writes `-640/-1200.webp` + an `-og.jpg` share card) |
+
+**Every Play link is `play/?play=1`.** That query is the game's own fast path (minigolf-pro R4669): it
+skips the menu and lands the visitor in a hole, hole 1 for a newcomer and their saved spot otherwise.
+Plain `play/` opens the menu. Keep new Play links on `?play=1`; the audit checks that it still lands.
+
+**Adding a journal post:** copy `journal/level-critic/` as the template (its `og:image` is a JPEG
+on purpose, since link-preview scrapers don't all take WebP), then list the post in
+`journal/index.html`, `journal/feed.xml` (new `<entry>`, bump the feed's `<updated>`), `sitemap.xml`,
+the "from the journal" block on the home page, and the `PAGES` list in `tools/audit.mjs`.
+Every number in a post should come from a real tool run or a measurement in the game repo.
 
 **Updating the game** is always the same three steps: build it in the game repo, `npm run sync-game`,
 then `npm run deploy -- --push`. `sync-game` refuses a Poki or CrazyGames build (their SDKs must not
@@ -62,12 +74,21 @@ Remove any other `A @` record (an old Vercel one pointed at `216.198.79.1`) and 
 `www` CNAME. Check the IPs against GitHub's current docs ("Managing a custom domain for your
 GitHub Pages site") before changing anything. Once DNS resolves, tick **Enforce HTTPS**.
 
+**Email:** `hello@greenfieldstudio.org` is a Namecheap email-forwarding alias (*Domain List → Manage →
+Redirect Email*) to the studio inbox. It relies on Namecheap's `eforward` MX records and their SPF
+`TXT`, so leave those alone when editing DNS.
+
 ## Playing somewhere else instead
 
-If a publishing deal ever wants the browser version to live only on a portal, set `PLAY_OVERRIDE`
-at the top of `assets/js/site.js` to that URL. Every Play button on the site then links there,
-with no markup changes. (For a no-JS visitor the links still point at `play/`, so also delete `play/`
-before the next deploy.)
+If a publishing deal ever wants the browser version to live only on a portal, two steps:
+
+1. Set `PLAY_OVERRIDE` at the top of `assets/js/site.js` to the portal URL. On every page that loads
+   `site.js`, every link into `play/` (any query) then opens the portal in a new tab, and the inline
+   stage stays off. No markup changes.
+2. Replace `play/` with a one-file redirect to the portal instead of deleting it. The journal posts
+   and `404.html` don't load `site.js`, no-JS visitors skip it, and bookmarks, search results and
+   old share links all point at `greenfieldstudio.org/play/`. Deleting the folder would send all of
+   them to the 404 page, whose own Play link points back at `/play/`.
 
 ## Design rules (so it stays coherent)
 

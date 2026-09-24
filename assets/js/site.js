@@ -19,7 +19,10 @@
   const wantsFullPage = () => mq('(pointer: coarse)') || window.innerWidth < 820 || window.innerHeight < 480;
 
   if (PLAY_OVERRIDE) {
-    document.querySelectorAll('[data-play], [data-newtab]').forEach((a) => {
+    // Every link into the game (any Play button, any query string), not only the stage's own.
+    document.querySelectorAll('a[href]').forEach((a) => {
+      const u = new URL(a.getAttribute('href'), location.href);
+      if (u.origin !== location.origin || !/\/play\/(index\.html)?$/.test(u.pathname)) return;
       a.href = PLAY_OVERRIDE;
       a.target = '_blank';
       a.rel = 'noopener';

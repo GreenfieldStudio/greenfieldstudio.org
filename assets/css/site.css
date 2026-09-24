@@ -515,6 +515,40 @@ button { font: inherit; color: inherit; }
 .prose ul { padding-left: 1.2em; color: var(--cream-2); }
 .prose li { margin-bottom: 6px; }
 
+/* ── journal ───────────────────────────────────────────────────────────────── */
+.post .wrap { max-width: 760px; }
+.post-title { font-size: clamp(34px, 6vw, 60px); line-height: 1.08; margin-bottom: 18px; }
+.post-body { margin-top: 36px; }
+.post-body h2 { font-size: clamp(24px, 3vw, 30px); font-weight: 400; margin: 48px 0 14px; }
+.post-body p, .post-body li { color: var(--cream-2); }
+.post-body strong { color: var(--cream); font-weight: 500; }
+.post-body ul { list-style: none; display: grid; gap: 10px; margin: 8px 0 20px; }
+.post-body li { position: relative; padding-left: 22px; }
+.post-body li::before { content: ''; position: absolute; left: 2px; top: 0.72em; width: 5px; height: 5px; border-radius: 50%; background: var(--cream-3); }
+.post-body .spec { margin: 28px 0; }
+.terminal {
+  margin: 0 0 24px;
+  padding: 18px 20px;
+  border: 1px solid var(--hair);
+  background: rgba(3, 7, 5, 0.7);
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.75;
+  color: var(--cream-2);
+  -webkit-overflow-scrolling: touch;
+}
+.terminal code { font: inherit; white-space: pre; }
+.terminal mark { background: rgba(212, 175, 100, 0.14); color: var(--cream); padding: 1px 0; }
+.post-list { list-style: none; display: grid; gap: 0; margin-top: 32px; border-top: 1px solid var(--hair); }
+.post-list li { border-bottom: 1px solid var(--hair); }
+.post-list a { display: grid; grid-template-columns: 8.5em minmax(0, 1fr); gap: 20px; padding: 26px 0; text-decoration: none; }
+.post-list a:hover h2 { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.2em; }
+.post-list h2 { font-size: clamp(22px, 3vw, 28px); font-weight: 400; margin-bottom: 6px; }
+.post-list p { margin: 0; color: var(--cream-2); }
+@media (max-width: 560px) { .post-list a { grid-template-columns: minmax(0, 1fr); gap: 6px; } }
+@media (max-width: 520px) { .nav .nav-wide { display: none; } }
+
 /* ── footer: the course, measured ──────────────────────────────────────────── */
 .site-footer { padding: 56px 0 40px; border-top: 1px solid var(--hair); }
 .ruler { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); margin-bottom: 28px; }

@@ -3,14 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Privacy — Greenfield Studio</title>
-  <meta name="description" content="How greenfieldstudio.org and Minigolf Pro handle your data. The website sets no cookies and runs no analytics.">
-  <link rel="canonical" href="https://greenfieldstudio.org/privacy/">
+  <title>Journal — Greenfield Studio</title>
+  <meta name="description" content="Notes from the workshop: how Greenfield Studio builds, measures and tunes its games.">
+  <link rel="canonical" href="https://greenfieldstudio.org/journal/">
   <meta name="theme-color" content="#0b1811">
   <meta name="color-scheme" content="dark">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Greenfield Studio">
+  <meta property="og:title" content="Journal — Greenfield Studio">
+  <meta property="og:description" content="Notes from the workshop: how Greenfield Studio builds, measures and tunes its games.">
+  <meta property="og:url" content="https://greenfieldstudio.org/journal/">
+  <meta property="og:image" content="https://greenfieldstudio.org/assets/img/og-studio.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="alternate" type="application/atom+xml" title="Greenfield Studio journal" href="feed.xml">
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
   <link rel="icon" href="../favicon.ico" sizes="32x32">
   <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+  <link rel="preload" href="../assets/fonts/jost-latin-wght.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="../assets/css/site.css">
 </head>
 <body>
@@ -24,7 +33,7 @@
       </a>
       <nav class="nav" aria-label="Main">
         <a href="../minigolf-pro/">Minigolf Pro</a>
-        <a href="../journal/">Journal</a>
+        <a href="./" aria-current="page">Journal</a>
         <a href="../press/">Press</a>
         <a class="nav-wide" href="../#studio">Studio</a>
         <a class="nav-wide" href="../#contact">Contact</a>
@@ -33,25 +42,22 @@
   </header>
 
   <main id="main">
-    <section class="section" style="padding-top:clamp(32px,6vw,72px)" aria-labelledby="privacy-title">
-      <div class="wrap prose">
-        <p class="fig"><span>privacy</span> <b>last updated 2026-09-24</b></p>
-        <h1 class="h2" id="privacy-title" style="font-size:clamp(36px,6vw,56px)">Privacy</h1>
-        <p class="lede">Short version: this website doesn't track you. The game keeps your progress, and sends crash reports so bugs can be fixed.</p>
-
-        <h2>This website</h2>
-        <ul>
-          <li>No cookies, no analytics, no advertising, no tracking pixels.</li>
-          <li>Everything (fonts, images, video) is served from this domain. The site makes no requests to third parties.</li>
-          <li>The site is hosted on GitHub Pages. Like any web host, GitHub may log technical data such as IP addresses to keep the service secure. See <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener">GitHub's privacy statement</a>.</li>
+    <section class="section" style="padding-top:clamp(32px,6vw,72px)" aria-labelledby="journal-title">
+      <div class="wrap" style="max-width:860px">
+        <p class="fig"><span>journal</span> <b>notes from the workshop</b></p>
+        <h1 class="h2" id="journal-title" style="font-size:clamp(36px,6vw,60px)">Journal</h1>
+        <p class="lede">How the games get built, measured and tuned, including the parts that went wrong. <a href="feed.xml">Follow via RSS/Atom</a>.</p>
+        <ul class="post-list">
+          <li>
+            <a href="level-critic/">
+              <span class="anno">2026-09-24 · devlog #1</span>
+              <div>
+                <h2>The critic that plays every hole first</h2>
+                <p>A physics simulator plays every hole in Minigolf Pro thousands of times and files complaints. Then the critic gets checked too.</p>
+              </div>
+            </a>
+          </li>
         </ul>
-
-        <h2>Minigolf Pro</h2>
-        <p>When you play Minigolf Pro here, the game saves your progress in your browser. Cloud save, leaderboards, community holes and online play use Google Firebase with an anonymous account that is created for you. Error and crash reports are always sent, with any free text scrubbed of email addresses, web addresses and file paths. Gameplay analytics are off unless you switch them on in Settings. The details are in the game's own policy:</p>
-        <p><a class="link-arrow" href="../play/privacy.html">Minigolf Pro privacy policy</a></p>
-
-        <h2>Contact</h2>
-        <p>Questions, or a request to see or delete your data: <a href="mailto:hello@greenfieldstudio.org">hello@greenfieldstudio.org</a>.</p>
       </div>
     </section>
   </main>
@@ -65,8 +71,8 @@
         <ul class="footer-links">
           <li><a href="../">Studio</a></li>
           <li><a href="../minigolf-pro/">Minigolf Pro</a></li>
-          <li><a href="../journal/">Journal</a></li>
           <li><a href="../press/">Press kit</a></li>
+          <li><a href="../privacy/">Privacy</a></li>
           <li><a href="https://www.youtube.com/@Greenfield.Studio" rel="noopener me">YouTube</a></li>
         </ul>
         <p class="footer-note">© 2026 Greenfield Studio</p>

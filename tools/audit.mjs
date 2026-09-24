@@ -35,6 +35,8 @@ const PAGES = [
   { path: 'minigolf-pro/', name: 'game' },
   { path: 'press/', name: 'press' },
   { path: 'privacy/', name: 'privacy' },
+  { path: 'journal/', name: 'journal' },
+  { path: 'journal/level-critic/', name: 'post-level-critic' },
   { path: 'this-page-does-not-exist/', name: '404', status: 404 },
 ];
 const VIEWPORTS = [
@@ -224,6 +226,20 @@ if (GAME) {
   rows.push({ page: 'play/', viewport: 'debug boot', kb: `boot ${bootMs} ms`, links: '', errors: JSON.stringify(result) });
   await ctx.close();
 
+  // ?play=1 must land a NEWCOMER in hole 1, not on the menu (the game's R4669 fast path).
+  {
+    const c = await browser.newContext({ viewport: { width: 1280, height: 720 } }); // fresh profile
+    const p = await c.newPage();
+    await p.goto(BASE + 'play/?play=1&debug=1', { waitUntil: 'load' });
+    await p.waitForFunction(() => window.__mg && window.__mg.getState && window.__mg.getState().loaded, null, { timeout: 60000 });
+    const landed = await p.waitForFunction(() => window.__mg.getState().gameState === 'playing', null, { timeout: 15000 })
+      .then(() => true).catch(() => false);
+    const st = await p.evaluate(() => { const s = window.__mg.getState(); return { gameState: s.gameState, hole: s.currentHole, welcome: !!s.showWelcome }; });
+    if (!landed || st.hole !== 0) fail('play', `?play=1 did not land in hole 1: ${JSON.stringify(st)}`);
+    rows.push({ page: 'play/?play=1', viewport: 'newcomer', kb: '', links: '', errors: JSON.stringify(st) });
+    await c.close();
+  }
+
   // The inline stage (desktop): hero Play → game boots inside the stage → Close restores the page.
   {
     const c = await browser.newContext({ viewport: { width: 1280, height: 800 } });
@@ -256,9 +272,11 @@ if (GAME) {
     const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
     const p = await c.newPage();
     await p.goto(BASE, { waitUntil: 'load' });
-    await Promise.all([p.waitForURL(/\/play\/$/, { timeout: 10000 }).catch(() => {}), p.tap('[data-play-jump]')]);
+    // Play opens /play/?play=1: the game's own fast path (R4669) then lands straight in a hole.
+    const PLAY_RE = /\/play\/(\?play=1)?$/;
+    await Promise.all([p.waitForURL(PLAY_RE, { timeout: 10000 }).catch(() => {}), p.tap('[data-play-jump]')]);
     const url = p.url();
-    if (!/\/play\/$/.test(url)) fail('stage', `phone Play did not open the full page (at ${url})`);
+    if (!PLAY_RE.test(url)) fail('stage', `phone Play did not open the full page (at ${url})`);
     const iframes = await p.evaluate(() => document.querySelectorAll('iframe').length);
     rows.push({ page: 'home stage', viewport: 'phone tap', kb: url.replace(origin, ''), links: '', errors: `iframes on page: ${iframes}` });
     await c.close();
