@@ -4,6 +4,7 @@
  *
  *   node tools/capture-holes.mjs 14:switch-room 36:asteroid-field
  *   node tools/capture-holes.mjs --dist D:/src/minigolf-pro/dist 5:the-bounce
+ *   node tools/capture-holes.mjs --out assets/media/worlds --no-og 5:meadow   (no share card)
  *
  * Serves a Minigolf Pro web build (default: ../minigolf-pro/dist, or play/ if that is
  * missing), drives it through the ?debug=1 `window.__mg` API, and writes
@@ -21,17 +22,22 @@ import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { loadPlaywright } from './lib/playwright.mjs';
+import { strictOptions } from './lib/args.mjs';
 
+strictOptions(['dist', 'out', 'no-og']);
 const SITE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
-const di = args.indexOf('--dist');
-let DIST = di > -1 ? resolve(args.splice(di, 2)[1]) : resolve(SITE, '..', 'minigolf-pro', 'dist');
+const take = (name) => { const i = args.indexOf(`--${name}`); return i > -1 ? args.splice(i, 2)[1] : null; };
+const NO_OG = args.includes('--no-og');
+if (NO_OG) args.splice(args.indexOf('--no-og'), 1);
+const distArg = take('dist');
+let DIST = distArg ? resolve(distArg) : resolve(SITE, '..', 'minigolf-pro', 'dist');
 if (!existsSync(join(DIST, 'index.html'))) DIST = join(SITE, 'play');
+const OUT = resolve(SITE, take('out') || join('assets', 'media', 'journal'));
 const shots = args.map((a) => { const [i, name] = a.split(':'); return { idx: Number(i), name }; })
   .filter((s) => Number.isInteger(s.idx) && s.name);
-if (!shots.length) { console.error('usage: node tools/capture-holes.mjs <idx>:<name> [...] [--dist <dir>]'); process.exit(1); }
+if (!shots.length) { console.error('usage: node tools/capture-holes.mjs <idx>:<name> [...] [--dist <dir>] [--out <dir>] [--no-og]'); process.exit(1); }
 
-const OUT = join(SITE, 'assets', 'media', 'journal');
 mkdirSync(OUT, { recursive: true });
 
 function holeClip(cb) {
@@ -89,11 +95,13 @@ try {
       if (r.status !== 0) throw new Error(`ffmpeg failed for ${out}`);
     }
     // A JPEG twin for og:image: link-preview scrapers (LinkedIn's among them) don't reliably take WebP.
-    const og = join(OUT, `${sh.name}-og.jpg`);
-    const rj = spawnSync('ffmpeg', ['-v', 'error', '-y', '-i', png, '-vf', `scale='min(1200,iw)':-2:flags=lanczos,format=yuvj420p`, '-frames:v', '1', '-q:v', '3', og]);
-    if (rj.status !== 0) throw new Error(`ffmpeg failed for ${og}`);
+    if (!NO_OG) {
+      const og = join(OUT, `${sh.name}-og.jpg`);
+      const rj = spawnSync('ffmpeg', ['-v', 'error', '-y', '-i', png, '-vf', `scale='min(1200,iw)':-2:flags=lanczos,format=yuvj420p`, '-frames:v', '1', '-q:v', '3', og]);
+      if (rj.status !== 0) throw new Error(`ffmpeg failed for ${og}`);
+    }
     rmSync(png, { force: true });
-    console.log(`hole ${sh.idx} → assets/media/journal/${sh.name}-{640,1200}.webp + -og.jpg  (${clip ? `hole ${cb.hole.w}x${cb.hole.h}` : 'full canvas'})`);
+    console.log(`hole ${sh.idx} → ${OUT.replace(SITE, '').replace(/\\/g, '/')}/${sh.name}-{640,1200}.webp${NO_OG ? '' : ' + -og.jpg'}  (${clip ? `hole ${cb.hole.w}x${cb.hole.h}` : 'full canvas'})`);
   }
 } finally {
   await browser.close();

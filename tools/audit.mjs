@@ -14,7 +14,7 @@
  * without alt · heading order · every internal link/asset resolves · contrast of the
  * palette's text pairs (WCAG AA).
  */
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -37,6 +37,7 @@ const OUT = join(SITE, '.audit');
 const PAGES = [
   { path: '', name: 'home' },
   { path: 'minigolf-pro/', name: 'game' },
+  { path: 'ambience/', name: 'ambience' },
   { path: 'press/', name: 'press' },
   { path: 'privacy/', name: 'privacy' },
   { path: 'journal/', name: 'journal' },
@@ -68,6 +69,9 @@ const LIVE = !/^(localhost|127\.0\.0\.1)$/.test(new URL(BASE).hostname);
 const COUNTER = LIVE && !!CLOUDFLARE_BEACON_TOKEN;
 const hostOf = (u) => { try { return new URL(u).hostname; } catch (_) { return ''; } };
 const counterBlocked = new Set(); // pages where this machine's network refused the beacon
+// Every page's menu and footer come from one template (tools/sync-chrome.mjs); a hand edit drifts.
+const chromeFailure = LIVE ? null
+  : (() => { const r = spawnSync(process.execPath, [join(SITE, 'tools', 'sync-chrome.mjs'), '--check'], { encoding: 'utf8' }); return r.status ? (r.stderr || r.stdout).trim() : null; })();
 // 404.html uses root-absolute paths (Pages serves it at any depth), so it is only meaningful
 // at a domain root — not on a github.io/<repo>/ staging URL.
 if (new URL(BASE).pathname !== '/') {
@@ -79,6 +83,7 @@ const { chromium } = await loadPlaywright();
 const browser = await chromium.launch();
 const failures = [];
 const fail = (where, msg) => failures.push(`${where}: ${msg}`);
+if (chromeFailure) fail('menus/footers', chromeFailure.replace(/\n/g, '; '));
 const rows = [];
 const checked = new Map(); // url -> status
 

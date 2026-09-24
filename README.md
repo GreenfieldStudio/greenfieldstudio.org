@@ -7,15 +7,16 @@ and no runtime dependencies. The game at `/play/` is the Minigolf Pro **default 
 the same one itch.io serves, copied in by a script.
 
 ```
-index.html            studio home: hero, the play stage, the studio, latest journal entry, contact
+index.html            studio home: hero, our work (one card per project), the play stage, studio, journal, contact
 minigolf-pro/         the game's page
+ambience/             Greenfield Ambience: the films (list written by tools/sync-ambience.mjs), the worlds
 journal/              devlog: index, one folder per post, feed.xml (Atom)
 press/                press kit (press/files/ + the zip are generated)
 privacy/              privacy note for the site; links the game's own policy
 404.html              "Out of bounds." (root-absolute paths: Pages serves it at any depth)
 play/                 GENERATED — the game build (never edit by hand, never committed on main)
 assets/css/site.css   the whole design system; tokens on :root
-assets/js/site.js     inline play stage, lazy video loops, the PLAY_OVERRIDE switch
+assets/js/site.js     inline play stage, lazy video loops, trailer play button, film player, PLAY_OVERRIDE
 assets/media/         web derivatives of minigolf-pro/branding (generated, committed)
 assets/fonts/         Jost + IBM Plex Mono, latin subsets, SIL OFL (licences alongside)
 tools/                everything below
@@ -31,7 +32,10 @@ tools/                everything below
 | publish | `npm run deploy` (dry run), then `npm run deploy -- --push` |
 | check the live site | `node tools/audit.mjs --url https://greenfieldstudio.org/ --game` |
 | rebuild images/video | `npm run media` (reads `../minigolf-pro/branding`; set `MINIGOLF_REPO` if elsewhere) |
-| hole screenshots for a post | `node tools/capture-holes.mjs 36:asteroid-field` (0-based campaign index; writes `-640/-1200.webp` + an `-og.jpg` share card) |
+| hole screenshots for a post | `node tools/capture-holes.mjs 36:asteroid-field` (0-based campaign index; writes `-640/-1200.webp` + an `-og.jpg` share card; `--out <dir> --no-og` for other uses, e.g. the world cards in `assets/media/worlds/`) |
+| a new Ambience film went public | `node tools/sync-ambience.mjs`, check `/ambience/`, then deploy |
+| the YouTube studio banner | `node tools/make-banner.mjs --worlds <dir>` → `.audit/banner/` (rendered from the site's own CSS and dotted shot; world images via capture-holes `--out <dir> --no-og`) |
+| change the menu or footer | edit the template in `tools/sync-chrome.mjs`, run it (the audit fails if a page drifts) |
 | see visitor numbers | Cloudflare dashboard → Analytics → Web analytics → `greenfieldstudio.org` (`/play/` = game loads) |
 
 **Every Play link is `play/?play=1`.** That query is the game's own fast path (minigolf-pro R4669): it
@@ -43,6 +47,12 @@ on purpose, since link-preview scrapers don't all take WebP), then list the post
 `journal/index.html`, `journal/feed.xml` (new `<entry>`, bump the feed's `<updated>`), `sitemap.xml`,
 the "from the journal" block on the home page, and the `PAGES` list in `tools/audit.mjs`.
 Every number in a post should come from a real tool run or a measurement in the game repo.
+
+**Greenfield Ambience films** come from the channel's public feed: `sync-ambience` self-hosts each
+thumbnail, records the film in `assets/media/ambience/films/films.json` and rewrites the list on
+`/ambience/`. Unlisted, private or still-processing uploads aren't in the feed, so they stay off the
+site by themselves; with no public film the page shows a "coming soon" card. A film plays in
+YouTube's privacy-enhanced player (youtube-nocookie.com) inside a dialog, created only on click.
 
 **Updating the game** is always the same three steps: build it in the game repo, `npm run sync-game`,
 then `npm run deploy -- --push`. `sync-game` refuses a Poki or CrazyGames build (their SDKs must not
@@ -105,12 +115,17 @@ If a publishing deal ever wants the browser version to live only on a portal, tw
 The look is **Surveyed Green**, the studio's identity from the YouTube banner (philosophy in
 `minigolf-pro/branding/youtube-banner-philosophy.md`):
 
-- One cream for every mark and letter; the deep green field; **brass only on Play**.
+- One cream for every mark and letter; the deep green field; **brass only on the page's one main
+  action** (Play, or Subscribe on the Ambience page).
+- One studio identity: the dotted-shot mark and the thin spaced wordmark, here and on both YouTube
+  channels. Products keep their own look inside it (Minigolf Pro's Fredoka lockup and game colours;
+  Ambience's footage under the same thin "GREENFIELD · AMBIENCE" lockup).
 - Monospaced micro-annotations **certify true facts**. If a number on the site stops being true
   (holes, worlds, languages), change it. Don't add numbers you can't back up.
 - The only signature motion is the dotted shot drawing itself once, off under reduced motion.
   Its geometry is generated: `node tools/gen-survey.mjs wide|tall|miss` (evenly spaced by arc length).
 - Loops start only when on screen, after page load, and never under reduced-motion or Save-Data.
 - Budget: each page ≤ 300 KB at `load`, before anyone presses Play (`npm run audit` enforces it).
-- One third party only: the Cloudflare visitor counter, added at deploy time (see *How publishing
-  works*). Fonts and media are served from this domain.
+- One third party on page load: the Cloudflare visitor counter, added at deploy time (see *How
+  publishing works*). YouTube only after someone presses play on a film. Fonts, media and film
+  thumbnails are served from this domain.

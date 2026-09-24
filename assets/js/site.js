@@ -150,4 +150,53 @@
       firstStage.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'center' });
     });
   });
+
+  // ── a video with a branded play button instead of the browser's control bar ──
+  // Without JS the <video> keeps its native controls; with it, the controls return on play.
+  document.querySelectorAll('[data-video]').forEach((box) => {
+    const v = box.querySelector('video');
+    const btn = box.querySelector('[data-video-play]');
+    if (!v || !btn) return;
+    v.controls = false;
+    btn.hidden = false;
+    btn.addEventListener('click', () => {
+      btn.hidden = true;
+      v.controls = true;
+      const p = v.play();
+      if (p && p.catch) p.catch(() => {});
+      v.focus();
+    });
+  });
+
+  // ── films: a click opens YouTube's privacy-enhanced player in a dialog ──────────
+  // Nothing is requested from YouTube until someone presses a film; closing the dialog
+  // removes the player. Without JS (or <dialog>), each card is a plain link to YouTube.
+  const films = document.querySelectorAll('a[data-film]');
+  const dlg = document.querySelector('[data-player]');
+  if (films.length && dlg && typeof dlg.showModal === 'function') {
+    const slot = dlg.querySelector('[data-player-frame]');
+    const title = dlg.querySelector('[data-player-title]');
+    const watch = dlg.querySelector('[data-player-watch]');
+    let opener = null;
+    dlg.addEventListener('close', () => { slot.textContent = ''; if (opener) opener.focus(); });
+    dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); }); // the backdrop
+    dlg.querySelector('[data-player-close]').addEventListener('click', () => dlg.close());
+    films.forEach((a) => a.addEventListener('click', (e) => {
+      if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; // new-tab intents
+      const id = a.dataset.film;
+      if (!/^[A-Za-z0-9_-]{11}$/.test(id)) return;
+      e.preventDefault();
+      opener = a;
+      const f = document.createElement('iframe');
+      f.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1`;
+      f.title = a.dataset.filmTitle || 'Greenfield Ambience film';
+      f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+      f.setAttribute('allowfullscreen', '');
+      f.referrerPolicy = 'strict-origin-when-cross-origin'; // YouTube refuses embeds with no referrer
+      slot.appendChild(f);
+      title.textContent = f.title;
+      watch.href = a.href;
+      dlg.showModal();
+    }));
+  }
 })();
