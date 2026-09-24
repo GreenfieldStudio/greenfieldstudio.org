@@ -32,6 +32,7 @@ tools/                everything below
 | check the live site | `node tools/audit.mjs --url https://greenfieldstudio.org/ --game` |
 | rebuild images/video | `npm run media` (reads `../minigolf-pro/branding`; set `MINIGOLF_REPO` if elsewhere) |
 | hole screenshots for a post | `node tools/capture-holes.mjs 36:asteroid-field` (0-based campaign index; writes `-640/-1200.webp` + an `-og.jpg` share card) |
+| see visitor numbers | Cloudflare dashboard → Analytics → Web analytics → `greenfieldstudio.org` (`/play/` = game loads) |
 
 **Every Play link is `play/?play=1`.** That query is the game's own fast path (minigolf-pro R4669): it
 skips the menu and lands the visitor in a hole, hole 1 for a newcomer and their saved spot otherwise.
@@ -55,6 +56,15 @@ build is live.
 `tools/deploy.mjs` assembles everything into `.deploy/` and force-pushes it to the **`gh-pages`**
 branch as a single orphan commit, so the public repo never accumulates a history of 35 MB game
 builds. GitHub Pages serves `gh-pages` (Settings → Pages → Deploy from a branch → `gh-pages` / root).
+
+**The visitor counter** (Cloudflare Web Analytics; no cookies or local storage) is added by deploy,
+not written into the pages: every site page plus `play/index.html` gets the beacon in `.deploy/`
+only, so local previews and audits never count as visits. The token lives in `tools/analytics.mjs`
+(it's public; it ships in every page). Deploy refuses to publish when the counter and the privacy
+page disagree, in either direction, so switching it off means setting the token to `null` **and**
+removing the privacy page's paragraph. `"spa": false` keeps the game's own URL tidying
+(`history.replaceState`) from counting as extra visits. The live audit checks the counter is on
+every page and allows only Cloudflare's two hosts as third parties.
 
 ## Domain (Namecheap → GitHub Pages)
 
@@ -102,4 +112,5 @@ The look is **Surveyed Green**, the studio's identity from the YouTube banner (p
   Its geometry is generated: `node tools/gen-survey.mjs wide|tall|miss` (evenly spaced by arc length).
 - Loops start only when on screen, after page load, and never under reduced-motion or Save-Data.
 - Budget: each page ≤ 300 KB at `load`, before anyone presses Play (`npm run audit` enforces it).
-- No third-party requests from the site. Fonts and media are served from this domain.
+- One third party only: the Cloudflare visitor counter, added at deploy time (see *How publishing
+  works*). Fonts and media are served from this domain.
