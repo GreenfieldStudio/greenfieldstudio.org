@@ -1,0 +1,14 @@
+{
+  "name": "greenfieldstudio.org",
+  "private": true,
+  "description": "The Greenfield Studio website, with Minigolf Pro playable at /play/.",
+  "type": "module",
+  "scripts": {
+    "serve": "node tools/serve.mjs",
+    "audit": "node tools/audit.mjs",
+    "sync-game": "node tools/sync-game.mjs",
+    "media": "node tools/make-media.mjs",
+    "icons": "node tools/make-icons.mjs",
+    "deploy": "node tools/deploy.mjs"
+  }
+}

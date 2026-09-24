@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Minigolf Pro — free physics minigolf in your browser · Greenfield Studio</title>
+  <meta name="description" content="Free physics minigolf — 80 holes across 8 worlds, a full level editor, and online multiplayer. Plays right in your browser on desktop and mobile. No download, no paywall.">
+  <link rel="canonical" href="https://greenfieldstudio.org/minigolf-pro/">
+  <meta name="theme-color" content="#0b1811">
+  <meta name="color-scheme" content="dark">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Greenfield Studio">
+  <meta property="og:title" content="Minigolf Pro — free physics minigolf in your browser">
+  <meta property="og:description" content="80 holes across 8 worlds, a full level editor, and online multiplayer. Free, no download.">
+  <meta property="og:url" content="https://greenfieldstudio.org/minigolf-pro/">
+  <meta property="og:image" content="https://greenfieldstudio.org/assets/img/og-minigolf-pro.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Minigolf Pro key art: a smiling golf ball on a putting green at dusk">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="../favicon.ico" sizes="32x32">
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+  <link rel="preload" href="../assets/fonts/jost-latin-wght.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="../assets/css/site.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "VideoGame",
+    "name": "Minigolf Pro",
+    "url": "https://greenfieldstudio.org/minigolf-pro/",
+    "image": "https://greenfieldstudio.org/assets/img/og-minigolf-pro.png",
+    "description": "Free physics minigolf — 80 holes across 8 worlds, a full level editor, and online multiplayer. Plays right in your browser.",
+    "genre": ["Sports", "Minigolf", "Physics"],
+    "gamePlatform": ["Web browser"],
+    "applicationCategory": "Game",
+    "operatingSystem": "Any modern web browser",
+    "playMode": ["SinglePlayer", "MultiPlayer"],
+    "numberOfPlayers": { "@type": "QuantitativeValue", "minValue": 1, "maxValue": 4 },
+    "inLanguage": ["en", "de", "zh", "pt-BR", "fr", "es"],
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD", "url": "https://greenfieldstudio.org/play/" },
+    "author": { "@type": "Organization", "name": "Greenfield Studio", "url": "https://greenfieldstudio.org/" },
+    "publisher": { "@type": "Organization", "name": "Greenfield Studio", "url": "https://greenfieldstudio.org/" },
+    "trailer": {
+      "@type": "VideoObject",
+      "name": "Minigolf Pro — trailer",
+      "description": "80 holes, 8 worlds, a level editor and online play — free, in your browser.",
+      "thumbnailUrl": "https://greenfieldstudio.org/assets/media/trailer-poster.webp",
+      "contentUrl": "https://greenfieldstudio.org/assets/media/trailer-720.mp4",
+      "uploadDate": "2026-08-05"
+    }
+  }
+  </script>
+  <script src="../assets/js/site.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="../" aria-label="Greenfield Studio, home">
+        <svg viewBox="0 0 38 22" aria-hidden="true" focusable="false"><circle cx="4.5" cy="17" r="3.6" fill="#efe8d6"/><circle cx="11" cy="9.2" r="1.1" fill="#a19b8a"/><circle cx="16.8" cy="5.4" r="1.1" fill="#a19b8a"/><circle cx="23" cy="5.2" r="1.1" fill="#a19b8a"/><circle cx="28.4" cy="9" r="1.1" fill="#a19b8a"/><circle cx="32.5" cy="17" r="4.3" fill="#050b07" stroke="#efe8d6" stroke-width="1.4"/></svg>
+        <span class="brand-name">Greenfield Studio</span>
+      </a>
+      <nav class="nav" aria-label="Main">
+        <a href="./" aria-current="page">Minigolf Pro</a>
+        <a href="../#studio">Studio</a>
+        <a href="../press/">Press</a>
+        <a href="../#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="game-title">
+      <div class="wrap game-hero">
+        <h1 id="game-title"><img src="../assets/media/minigolf-pro-lockup-480.webp" srcset="../assets/media/minigolf-pro-lockup-480.webp 480w, ../assets/media/minigolf-pro-lockup-960.webp 960w" sizes="300px" width="480" height="480" alt="Minigolf Pro"></h1>
+        <p class="lede">Free physics minigolf. 80 holes across 8 worlds, a full level editor, and online multiplayer, and it plays right in your browser. No download, no paywall, no demo wall.</p>
+        <div class="btn-row">
+          <a class="btn btn--brass btn--lg" href="../play/" data-play-jump>
+            <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4.5 2.6v10.8l8.8-5.4z" fill="currentColor"/></svg>
+            Play now
+          </a>
+          <a class="btn btn--lg" href="#trailer">Watch the trailer</a>
+        </div>
+        <ul class="stats" aria-label="At a glance">
+          <li>holes<b>80</b></li>
+          <li>worlds<b>8</b></li>
+          <li>players<b>1–4</b></li>
+          <li>languages<b>6</b></li>
+          <li>price<b>free</b></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section section--stage" id="play" aria-labelledby="play-title">
+      <div class="wrap">
+        <p class="fig"><span>fig. 01</span> <b>play it here</b></p>
+        <div class="stage-head">
+          <h2 id="play-title">Tee off in one click</h2>
+          <span class="anno">mouse or touch · desktop &amp; mobile</span>
+        </div>
+        <div class="stage-wrap" data-stage-wrap>
+          <div class="stage" data-stage data-play-src="../play/">
+            <img src="../assets/media/keyart-960.webp" srcset="../assets/media/keyart-960.webp 960w, ../assets/media/keyart-1600.webp 1600w" sizes="(max-width: 1240px) 100vw, 1180px" width="1600" height="900" alt="" style="object-position:center 30%">
+            <div class="stage-veil" data-veil>
+              <a class="btn btn--brass btn--lg" href="../play/" data-play>
+                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4.5 2.6v10.8l8.8-5.4z" fill="currentColor"/></svg>
+                Play Minigolf Pro
+              </a>
+              <span class="anno">free · in your browser · no download</span>
+            </div>
+          </div>
+          <div class="stage-bar">
+            <p class="stage-caption">Your progress saves automatically, here and on the full-screen version.</p>
+            <div class="btn-row stage-links">
+              <a class="link-arrow" href="../play/">Open full screen</a>
+              <a class="link-arrow" href="https://greenfieldstudio.itch.io/minigolf-pro" rel="noopener">Also on itch.io</a>
+            </div>
+            <div class="btn-row stage-controls">
+              <button class="btn btn--sm" type="button" data-fullscreen>
+                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg>
+                Full screen
+              </button>
+              <a class="btn btn--sm" href="../play/" target="_blank" rel="noopener" data-newtab>
+                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6.5 3H3v10h10V9.5M9.5 3H13v3.5M13 3 7.5 8.5"/></svg>
+                New tab
+              </a>
+              <button class="btn btn--sm" type="button" data-close>
+                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m3.5 3.5 9 9m0-9-9 9"/></svg>
+                Close game
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="worlds" aria-labelledby="worlds-title">
+      <div class="wrap">
+        <p class="fig"><span>fig. 02</span> <b>the course</b></p>
+        <h2 class="h2" id="worlds-title">80 holes across 8 worlds</h2>
+        <p class="lede">72 hand-crafted holes plus 8 mechanic-packed mastery finales. Each world has its own look, hazards, ambient wildlife and feel.</p>
+        <ul class="worlds" style="margin-top:36px">
+          <li><span class="swatch" style="--c:#4CAF50"></span><span class="anno">world 1</span><h3>Meadow</h3><p>Gentle greens, windmills, your first clean putts.</p></li>
+          <li><span class="swatch" style="--c:#00BCD4"></span><span class="anno">world 2</span><h3>Tropical</h3><p>Water hazards, sand traps, palm-lined fairways.</p></li>
+          <li><span class="swatch" style="--c:#78909C"></span><span class="anno">world 3</span><h3>Mountain</h3><p>Rolling slopes, ice patches, momentum runs.</p></li>
+          <li><span class="swatch" style="--c:#B8860B"></span><span class="anno">world 4</span><h3>Ruins</h3><p>Crumbling walls, hidden buttons, ancient doors.</p></li>
+          <li><span class="swatch" style="--c:#6366F1"></span><span class="anno">world 5</span><h3>Space</h3><p>Low gravity, portals, orbiting asteroids.</p></li>
+          <li><span class="swatch" style="--c:#EC4899"></span><span class="anno">world 6</span><h3>Neon</h3><p>Boost pads, spinners and magnets in pure flow.</p></li>
+          <li><span class="swatch" style="--c:#F472B6"></span><span class="anno">world 7</span><h3>Candy</h3><p>Bouncy walls, conveyor swirls, sweet chaos.</p></li>
+          <li><span class="swatch" style="--c:#67E8F9"></span><span class="anno">world 8</span><h3>Arctic</h3><p>Slick ice, breakable walls, frozen precision.</p></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section" id="features" aria-labelledby="features-title">
+      <div class="wrap">
+        <p class="fig"><span>fig. 03</span> <b>what's in the box</b></p>
+        <h2 class="visually-hidden" id="features-title">Features</h2>
+
+        <article class="feature">
+          <div>
+            <h3>Real physics, readable and fair</h3>
+            <p>Spinners, cannons, moving platforms, magnets, portals, breakable walls, slopes, wind and more. Every mechanic behaves the same way every time, so a missed shot always teaches you something.</p>
+            <p>Before a hole ships it has been played thousands of times by a physics simulator, and tuned until it's fair for first-timers and still rewarding for experts.</p>
+          </div>
+          <figure class="spec">
+            <video data-autoplay muted loop playsinline preload="none" poster="../assets/media/clip-windmill.webp" width="720" height="330" aria-hidden="true" tabindex="-1">
+              <source data-src="../assets/media/clip-windmill.webm" type="video/webm">
+              <source data-src="../assets/media/clip-windmill.mp4" type="video/mp4">
+            </video>
+            <figcaption class="anno">fig. 03a — meadow · a windmill spinner redirects the shot</figcaption>
+          </figure>
+        </article>
+
+        <article class="feature feature--flip">
+          <div>
+            <h3>Build anything: a full level editor</h3>
+            <p>A creation suite with 20+ tools. Place any mechanic, drag-tune the layout, and the editor checks that your hole is actually solvable before you publish it.</p>
+            <p>Share the link, then browse and play a growing library of community holes: like, sort and follow your favorite creators. Bundle favorites into <strong>playlists and gauntlets</strong> and share those too.</p>
+          </div>
+          <figure class="spec">
+            <img src="../assets/media/shot-editor-640.webp" srcset="../assets/media/shot-editor-640.webp 640w, ../assets/media/shot-editor-1200.webp 1200w" sizes="(max-width: 860px) 100vw, 560px" width="1200" height="1250" loading="lazy" decoding="async" alt="The Minigolf Pro level editor with a portal-and-spinner hole under construction">
+            <figcaption class="anno">fig. 03b — the editor on a tablet</figcaption>
+          </figure>
+        </article>
+
+        <article class="feature">
+          <div>
+            <h3>Play together, online</h3>
+            <ul>
+              <li><strong>2–4 player rooms</strong>, public or invite-only, matched or by code</li>
+              <li>Any of the 8 worlds together, in classic, Hard or Mirror variants</li>
+              <li>In-room chat and ghost replays of every shot</li>
+            </ul>
+            <p style="margin-top:14px">Ranked 1v1 (a Bronze to Diamond ladder) and tournaments are built and on the way. They switch on once the server-side match validator lands.</p>
+          </div>
+          <figure class="spec">
+            <img src="../assets/media/shot-multiplayer-640.webp" srcset="../assets/media/shot-multiplayer-640.webp 640w, ../assets/media/shot-multiplayer-1200.webp 1002w" sizes="(max-width: 860px) 100vw, 560px" width="1002" height="498" loading="lazy" decoding="async" alt="An online match: it's Theo's turn on a neon hole">
+            <figcaption class="anno">fig. 03c — an online match, player two to putt</figcaption>
+          </figure>
+        </article>
+
+        <article class="feature feature--flip">
+          <div>
+            <h3>More ways to play</h3>
+            <ul>
+              <li><strong>Random 9</strong>: a fresh 9-hole mix every run</li>
+              <li><strong>Endless</strong>: procedurally generated holes that never run out</li>
+              <li><strong>Drill</strong>: focused practice on a single mechanic, or a chain of them</li>
+              <li><strong>Hard Mode</strong>: every hole mirrored <em>and</em> obstacle-hardened, the campaign at maximum challenge</li>
+            </ul>
+            <p style="margin-top:14px">Plus a <strong>Daily Challenge</strong> with a streak to keep, a <strong>Weekly Challenge</strong>, a community-picked <strong>Hole of the Week</strong>, per-hole and weekly leaderboards, and GIF replays of your best shots to save and share.</p>
+          </div>
+          <figure class="spec">
+            <video data-autoplay muted loop playsinline preload="none" poster="../assets/media/clip-wormhole.webp" width="720" height="330" aria-hidden="true" tabindex="-1">
+              <source data-src="../assets/media/clip-wormhole.webm" type="video/webm">
+              <source data-src="../assets/media/clip-wormhole.mp4" type="video/mp4">
+            </video>
+            <figcaption class="anno">fig. 03d — space · in one portal, out the other, into the cup</figcaption>
+          </figure>
+        </article>
+
+        <article class="feature">
+          <div>
+            <h3>Make it yours</h3>
+            <p>Earn coins just by playing and unlock dozens of ball skins, trails, celebrations and auras, plus a face builder (expressions, animals and legendary lookalikes) and outfits. 100+ achievements to chase.</p>
+          </div>
+          <figure class="spec">
+            <video data-autoplay muted loop playsinline preload="none" poster="../assets/media/clip-ball-faces.webp" width="700" height="644" aria-hidden="true" tabindex="-1">
+              <source data-src="../assets/media/clip-ball-faces.webm" type="video/webm">
+              <source data-src="../assets/media/clip-ball-faces.mp4" type="video/mp4">
+            </video>
+            <figcaption class="anno">fig. 03e — the face builder</figcaption>
+          </figure>
+        </article>
+
+        <div class="cards" style="margin-top:clamp(56px,8vw,104px)">
+          <div>
+            <h3 class="h3">Opponents that feel human</h3>
+            <p>The CPU is sim-trained to play like a person. It lays up, runs putts past, yips the occasional gimme, and comes in 8 named personalities across three difficulty tiers.</p>
+          </div>
+          <div>
+            <h3 class="h3">Built for everyone</h3>
+            <p>Colorblind palettes, high-contrast and reduced-motion modes. Full touch controls in portrait or landscape, with a left-handed mode.</p>
+          </div>
+          <div>
+            <h3 class="h3">Six languages</h3>
+            <p>English, Deutsch, 中文, Português (BR), Français and Español.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="gallery" aria-labelledby="gallery-title">
+      <div class="wrap">
+        <p class="fig"><span>fig. 04</span> <b>from the course</b></p>
+        <h2 class="h2" id="gallery-title">Holes-in-one, caught on film</h2>
+        <div class="gallery" style="margin-top:32px">
+          <figure class="spec">
+            <video data-autoplay muted loop playsinline preload="none" poster="../assets/media/clip-neon-strip.webp" width="720" height="440" aria-hidden="true" tabindex="-1">
+              <source data-src="../assets/media/clip-neon-strip.webm" type="video/webm">
+              <source data-src="../assets/media/clip-neon-strip.mp4" type="video/mp4">
+            </video>
+            <figcaption class="anno">neon · the strip</figcaption>
+          </figure>
+          <figure class="spec">
+            <video data-autoplay muted loop playsinline preload="none" poster="../assets/media/clip-sugar-rush.webp" width="620" height="380" aria-hidden="true" tabindex="-1">
+              <source data-src="../assets/media/clip-sugar-rush.webm" type="video/webm">
+              <source data-src="../assets/media/clip-sugar-rush.mp4" type="video/mp4">
+            </video>
+            <figcaption class="anno">candy · sugar rush</figcaption>
+          </figure>
+          <figure class="spec">
+            <video data-autoplay muted loop playsinline preload="none" poster="../assets/media/clip-lava-shore.webp" width="720" height="338" aria-hidden="true" tabindex="-1">
+              <source data-src="../assets/media/clip-lava-shore.webm" type="video/webm">
+              <source data-src="../assets/media/clip-lava-shore.mp4" type="video/mp4">
+            </video>
+            <figcaption class="anno">tropical · lava shore</figcaption>
+          </figure>
+          <figure class="spec">
+            <img src="../assets/media/shot-arctic-640.webp" srcset="../assets/media/shot-arctic-640.webp 640w, ../assets/media/shot-arctic-1200.webp 1200w" sizes="(max-width: 520px) 100vw, (max-width: 860px) 50vw, 380px" width="1200" height="800" loading="lazy" decoding="async" alt="An Arctic hole: a sheet of slick ice between the tee and a cup ringed by sand">
+            <figcaption class="anno">arctic · across the ice</figcaption>
+          </figure>
+          <figure class="spec">
+            <img src="../assets/media/shot-ruins-640.webp" srcset="../assets/media/shot-ruins-640.webp 640w, ../assets/media/shot-ruins-1200.webp 1200w" sizes="(max-width: 520px) 100vw, (max-width: 860px) 50vw, 380px" width="1200" height="616" loading="lazy" decoding="async" alt="A Ruins hole with a cannon, crumbling stone walls and a sand-edged pool">
+            <figcaption class="anno">ruins · the cannon line</figcaption>
+          </figure>
+          <figure class="spec">
+            <img src="../assets/media/shot-tropical-640.webp" srcset="../assets/media/shot-tropical-640.webp 640w, ../assets/media/shot-tropical-1200.webp 1076w" sizes="(max-width: 520px) 100vw, (max-width: 860px) 50vw, 380px" width="1076" height="952" loading="lazy" decoding="async" alt="A Tropical hole with two ponds, bamboo walls and a palm tree by the cup">
+            <figcaption class="anno">tropical · between the ponds</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="trailer" aria-labelledby="trailer-title">
+      <div class="wrap">
+        <p class="fig"><span>fig. 05</span> <b>trailer</b></p>
+        <h2 class="h2" id="trailer-title">Watch the trailer</h2>
+        <div class="video-frame" style="margin-top:28px">
+          <video controls preload="none" playsinline poster="../assets/media/trailer-poster.webp" width="1280" height="720">
+            <source src="../assets/media/trailer-720.mp4" type="video/mp4">
+            <a href="../assets/media/trailer-720.mp4">Download the trailer (MP4)</a>
+          </video>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="how" aria-labelledby="how-title">
+      <div class="wrap">
+        <p class="fig"><span>fig. 06</span> <b>how to play</b></p>
+        <h2 class="h2" id="how-title">Three steps, then a lifetime of lining it up</h2>
+        <ol class="howto" style="margin-top:28px">
+          <li><strong>Drag back</strong><span>from the ball to aim. The further you pull, the harder the shot.</span></li>
+          <li><strong>Release</strong><span>to putt. On a phone, touch and drag does the same.</span></li>
+          <li><strong>Sink it</strong><span>in as few strokes as you can, then chase the ace.</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section band" aria-labelledby="cta-title">
+      <div class="wrap">
+        <img class="mascot" src="../assets/media/ball-victory-400.webp" width="400" height="400" alt="" loading="lazy">
+        <h2 class="h2" id="cta-title">100% free. Plays in any modern browser.</h2>
+        <p class="lede" style="margin-inline:auto">Have fun out there.</p>
+        <div class="btn-row">
+          <a class="btn btn--brass btn--lg" href="../play/">
+            <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4.5 2.6v10.8l8.8-5.4z" fill="currentColor"/></svg>
+            Play Minigolf Pro
+          </a>
+          <a class="btn btn--lg" href="../press/">Press kit</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="ruler" aria-hidden="true">
+        <span><em>meadow</em></span><span><em>tropical</em></span><span><em>mountain</em></span><span><em>ruins</em></span><span><em>space</em></span><span><em>neon</em></span><span><em>candy</em></span><span><em>arctic</em></span>
+      </div>
+      <div class="footer-row">
+        <ul class="footer-links">
+          <li><a href="../">Studio</a></li>
+          <li><a href="../press/">Press kit</a></li>
+          <li><a href="../privacy/">Privacy</a></li>
+          <li><a href="https://greenfieldstudio.itch.io/minigolf-pro" rel="noopener">itch.io</a></li>
+        </ul>
+        <p class="footer-note">© 2026 Greenfield Studio</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

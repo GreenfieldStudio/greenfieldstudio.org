@@ -1,0 +1,10 @@
+# Generated, never committed on main — tools/deploy.mjs ships them to the gh-pages branch.
+# The game build (node tools/sync-game.mjs):
+/play/
+# Full-resolution press originals and the press-kit archive (node tools/make-media.mjs):
+/press/files/
+/press/*.zip
+# Tool scratch:
+/.deploy/
+/.audit/
+node_modules/
