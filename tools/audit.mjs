@@ -19,6 +19,7 @@ import { mkdirSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadPlaywright } from './lib/playwright.mjs';
+import { CLOUDFLARE_BEACON_TOKEN, BEACON_SRC, BEACON_HOSTS } from './analytics.mjs';
 
 const SITE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (name, def) => {
@@ -57,6 +58,11 @@ if (!BASE) {
 }
 if (!BASE.endsWith('/')) BASE += '/';
 const origin = new URL(BASE).origin;
+/* The visitor counter exists only in the DEPLOYED copy (tools/deploy.mjs adds it). So: on the
+   live site with a token set, every page must carry it and its two hosts are the only allowed
+   third parties; locally, no page may carry it. */
+const LIVE = !/^(localhost|127\.0\.0\.1)$/.test(new URL(BASE).hostname);
+const COUNTER = LIVE && !!CLOUDFLARE_BEACON_TOKEN;
 // 404.html uses root-absolute paths (Pages serves it at any depth), so it is only meaningful
 // at a domain root — not on a github.io/<repo>/ staging URL.
 if (new URL(BASE).pathname !== '/') {
@@ -104,7 +110,7 @@ for (const vp of VIEWPORTS) {
     page.on('pageerror', (e) => errors.push(String(e)));
     page.on('response', async (res) => {
       const u = new URL(res.url());
-      if (u.origin !== origin && !u.protocol.startsWith('data')) thirdParty.add(u.host);
+      if (u.origin !== origin && !u.protocol.startsWith('data') && !(COUNTER && BEACON_HOSTS.includes(u.hostname))) thirdParty.add(u.host);
       if (loaded) return;
       const len = Number(res.headers()['content-length'] || 0);
       bytes += len || (await res.body().catch(() => Buffer.alloc(0))).length;
@@ -114,7 +120,7 @@ for (const vp of VIEWPORTS) {
     const want = pg.status || 200;
     if (!resp || resp.status() !== want) fail(where, `HTTP ${resp && resp.status()} (want ${want})`);
 
-    const dom = await page.evaluate(() => {
+    const dom = await page.evaluate((beaconSrc) => {
       const hs = [...document.querySelectorAll('h1,h2,h3,h4,h5,h6')].map((h) => Number(h.tagName[1]));
       let skip = null;
       for (let i = 1; i < hs.length; i++) if (hs[i] > hs[i - 1] + 1) { skip = `h${hs[i - 1]}→h${hs[i]}`; break; }
@@ -134,13 +140,16 @@ for (const vp of VIEWPORTS) {
         urls: [...urls],
         title: document.title,
         desc: document.querySelector('meta[name="description"]')?.content || '',
+        counter: !!document.querySelector(`script[src="${beaconSrc}"]`),
       };
-    });
+    }, BEACON_SRC);
     if (dom.overflow > 0) fail(where, `horizontal overflow ${dom.overflow}px`);
     if (dom.noAlt.length) fail(where, `img without alt: ${dom.noAlt.join(', ')}`);
     if (dom.h1 !== 1) fail(where, `${dom.h1} <h1> elements`);
     if (dom.skip) fail(where, `heading level skipped ${dom.skip}`);
     if (!dom.desc && pg.name !== '404') fail(where, 'no meta description');
+    if (COUNTER && !dom.counter) fail(where, 'visitor counter missing (deploy adds it when a token is set)');
+    if (!LIVE && dom.counter) fail(where, 'visitor counter in the source page; only tools/deploy.mjs may add it');
 
     if (vp.name === 'desktop') {
       for (const u of dom.urls) {
@@ -194,6 +203,13 @@ for (const vp of VIEWPORTS) {
   for (const [fg, bg, r] of pairs) if (r < 4.5) fail('contrast', `${fg} on ${bg} = ${r.toFixed(2)}:1 (< 4.5)`);
   const worst = pairs.reduce((a, b) => (b[2] < a[2] ? b : a));
   rows.push({ page: 'contrast', viewport: 'worst pair', kb: `${worst[0]} on ${worst[1]} ${worst[2].toFixed(2)}:1`, links: '', errors: '' });
+
+  // the game's entry page is counted too (one count = one load of the game); read, not booted
+  const playHtml = await (await page.request.get(BASE + 'play/')).text();
+  const playCounted = playHtml.includes(BEACON_SRC);
+  if (COUNTER && !playCounted) fail('play', 'visitor counter missing on play/');
+  if (!LIVE && playCounted) fail('play', 'visitor counter in the local play/ build; only tools/deploy.mjs may add it');
+  rows.push({ page: 'visitor counter', viewport: LIVE ? 'live' : 'local', kb: COUNTER ? 'on' : 'off', links: '', errors: `play/ counted: ${playCounted}` });
   await ctx.close();
 }
 
