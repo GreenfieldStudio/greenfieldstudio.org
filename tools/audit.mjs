@@ -173,6 +173,20 @@ for (const vp of VIEWPORTS) {
       }
     }
     await page.waitForTimeout(250);
+    if (pg.name === 'home') {
+      const preview = await page.locator('.home-hero-preview video').evaluate((video) => ({
+        muted: video.muted,
+        loop: video.loop,
+        poster: video.poster,
+        sourceLoaded: [...video.querySelectorAll('source')].some((source) => source.hasAttribute('src')),
+        top: video.getBoundingClientRect().top,
+      })).catch(() => null);
+      if (!preview || !preview.muted || !preview.loop || !preview.poster.includes('clip-windmill.webp')) fail(where, 'gameplay preview or poster missing');
+      else {
+        if (preview.sourceLoaded) fail(where, 'gameplay video loaded despite reduced motion');
+        if (preview.top >= vp.height) fail(where, 'gameplay preview is below the first viewport');
+      }
+    }
     for (const e of errors) fail(where, `console: ${e.slice(0, 160)}`);
     if (thirdParty.size) fail(where, `third-party requests: ${[...thirdParty].join(', ')}`);
     if (pg.name !== '404' && bytes / 1024 > BUDGET_KB) fail(where, `${(bytes / 1024).toFixed(0)} KB at load > ${BUDGET_KB} KB budget`);
@@ -193,6 +207,16 @@ for (const vp of VIEWPORTS) {
     }
     await page.close();
   }
+  await ctx.close();
+}
+
+if (!LIVE) {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, reducedMotion: 'no-preference' });
+  const page = await ctx.newPage();
+  await page.goto(BASE, { waitUntil: 'load' });
+  const playing = await page.waitForFunction(() => document.querySelector('.home-hero-preview video')?.currentTime > 0.1, null, { timeout: 5000 })
+    .then(() => true).catch(() => false);
+  if (!playing) fail('home preview', 'gameplay clip did not start when visible and motion was allowed');
   await ctx.close();
 }
 

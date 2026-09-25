@@ -270,8 +270,8 @@ section[id] { scroll-margin-top: 92px; }
 .hero-cta { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 20px; margin-top: 24px; }
 
 .home-hero { text-align: left; padding-block: clamp(38px, 6vw, 82px); }
-.home-hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(28px, 5vw, 72px); align-items: center; }
-.home-hero-copy { min-width: 0; }
+.home-hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); grid-template-areas: "copy art" "copy preview"; column-gap: clamp(28px, 5vw, 72px); row-gap: 12px; align-items: center; }
+.home-hero-copy { grid-area: copy; min-width: 0; }
 .home-hero .survey { width: 220px; margin: 0 0 5px; }
 .home-hero .survey-title { display: none; }
 .home-hero .survey--tall { display: none; }
@@ -281,14 +281,17 @@ section[id] { scroll-margin-top: 92px; }
 .home-hero .muted { margin-bottom: 0; }
 .home-hero .hero-cta { justify-content: flex-start; margin-top: 26px; }
 .home-proof { margin: 18px 0 0; }
-.home-hero-art { align-self: center; }
+.home-hero-art { grid-area: art; align-self: end; }
 .home-hero-art img { aspect-ratio: 16 / 11; object-fit: cover; }
+.home-hero-preview { grid-area: preview; align-self: start; }
+.home-hero-preview video { display: block; width: 100%; aspect-ratio: 3 / 1; object-fit: cover; }
 .home-cards h3 { font-size: clamp(23px, 2.8vw, 31px); margin: 9px 0 12px; }
 .home-worlds { margin-top: 26px; }
 .home-worlds li { padding-bottom: 12px; }
 @media (max-width: 860px) {
-  .home-hero-grid { grid-template-columns: minmax(0, 1fr); }
+  .home-hero-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "copy" "preview" "art"; row-gap: clamp(20px, 4vw, 32px); }
   .home-hero-art { max-width: 700px; }
+  .home-hero-preview { width: min(100%, 700px); }
 }
 @media (max-width: 719px) { .home-hero .survey--tall { display: block; } }
 @media (max-width: 520px) {
@@ -296,6 +299,7 @@ section[id] { scroll-margin-top: 92px; }
   .home-hero .survey { width: 160px; }
   .home-hero .hero-cta .btn { width: 100%; }
   .home-hero-art img { aspect-ratio: 16 / 9; }
+  .home-hero-preview video { aspect-ratio: 16 / 7; }
   .worlds.home-worlds { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .home-worlds li > .anno, .home-worlds li > h3 { margin-inline: 10px; }
   .home-worlds h3 { font-size: 15px; }
