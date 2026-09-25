@@ -27,6 +27,8 @@ const PAGES = [
   ['ambience/index.html', '../', 'ambience'],
   ['journal/index.html', '../', 'journal'],
   ['journal/level-critic/index.html', '../../', 'journal'],
+  ['journal/coral-reef/index.html', '../../', 'journal'],
+  ['journal/level-editor/index.html', '../../', 'journal'],
   ['press/index.html', '../', 'press'],
   ['privacy/index.html', '../', 'privacy'],
   ['404.html', '/', 'none'],
@@ -43,15 +45,13 @@ const ICON = {
 const MARK = '<svg viewBox="0 0 38 22" aria-hidden="true" focusable="false"><circle cx="4.5" cy="17" r="3.6" fill="#efe8d6"/><circle cx="11" cy="9.2" r="1.1" fill="#a19b8a"/><circle cx="16.8" cy="5.4" r="1.1" fill="#a19b8a"/><circle cx="23" cy="5.2" r="1.1" fill="#a19b8a"/><circle cx="28.4" cy="9" r="1.1" fill="#a19b8a"/><circle cx="32.5" cy="17" r="4.3" fill="#050b07" stroke="#efe8d6" stroke-width="1.4"/></svg>';
 
 function nav(p, section) {
-  const home = section === 'home';
   const cur = (s) => (s === section ? ' aria-current="page"' : '');
   return `<nav class="nav" aria-label="Main">
         <a href="${p}minigolf-pro/"${cur('minigolf-pro')}>Minigolf Pro</a>
         <a href="${p}ambience/"${cur('ambience')}>Ambience</a>
         <a href="${p}journal/"${cur('journal')}>Journal</a>
-        <a href="${p}press/"${cur('press')}>Press</a>
-        <a class="nav-wide" href="${home ? '' : p}#studio">Studio</a>
-        <a class="nav-wide" href="${home ? '' : p}#contact">Contact</a>
+        <a class="nav-wide" href="${p}#studio">About</a>
+        <a class="nav-cta" href="${p}play/?play=1">Play Free</a>
       </nav>`;
 }
 

@@ -68,9 +68,8 @@
         <a href="../minigolf-pro/" aria-current="page">Minigolf Pro</a>
         <a href="../ambience/">Ambience</a>
         <a href="../journal/">Journal</a>
-        <a href="../press/">Press</a>
-        <a class="nav-wide" href="../#studio">Studio</a>
-        <a class="nav-wide" href="../#contact">Contact</a>
+        <a class="nav-wide" href="../#studio">About</a>
+        <a class="nav-cta" href="../play/?play=1">Play Free</a>
       </nav>
     </div>
   </header>
@@ -83,7 +82,7 @@
         <div class="btn-row">
           <a class="btn btn--brass btn--lg" href="../play/?play=1" data-play-jump>
             <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4.5 2.6v10.8l8.8-5.4z" fill="currentColor"/></svg>
-            Play now
+            Play Free
           </a>
           <a class="btn btn--lg" href="#trailer">Watch the trailer</a>
         </div>
@@ -97,9 +96,26 @@
       </div>
     </section>
 
+    <section class="section" id="trailer" aria-labelledby="trailer-title">
+      <div class="wrap">
+        <p class="fig"><span>fig. 01</span> <b>see it in motion</b></p>
+        <h2 class="h2" id="trailer-title">29 seconds on the course</h2>
+        <div class="video-frame" style="margin-top:28px" data-video>
+          <video controls preload="none" playsinline poster="../assets/media/trailer-poster.webp" width="1280" height="720">
+            <source src="../assets/media/trailer-720.mp4" type="video/mp4">
+            <a href="../assets/media/trailer-720.mp4">Download the trailer (MP4)</a>
+          </video>
+          <button class="video-play video-play--low" type="button" data-video-play hidden>
+            <span class="play-disc"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4.5 2.6v10.8l8.8-5.4z" fill="currentColor"/></svg></span>
+            <span class="anno">play the trailer · 0:29</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
     <section class="section section--stage" id="play" aria-labelledby="play-title">
       <div class="wrap">
-        <p class="fig"><span>fig. 01</span> <b>play it here</b></p>
+        <p class="fig"><span>fig. 02</span> <b>play it here</b></p>
         <div class="stage-head">
           <h2 id="play-title">Tee off in one click</h2>
           <span class="anno">mouse or touch · desktop &amp; mobile</span>
@@ -110,7 +126,7 @@
             <div class="stage-veil" data-veil>
               <a class="btn btn--brass btn--lg" href="../play/?play=1" data-play>
                 <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4.5 2.6v10.8l8.8-5.4z" fill="currentColor"/></svg>
-                Play Minigolf Pro
+                Play Free
               </a>
               <span class="anno">free · in your browser · no download</span>
             </div>
@@ -142,7 +158,7 @@
 
     <section class="section" id="worlds" aria-labelledby="worlds-title">
       <div class="wrap">
-        <p class="fig"><span>fig. 02</span> <b>the course</b></p>
+        <p class="fig"><span>fig. 03</span> <b>the course</b></p>
         <h2 class="h2" id="worlds-title">80 holes across 8 worlds</h2>
         <p class="lede">72 hand-crafted holes plus 8 mechanic-packed mastery finales. Each world has its own look, hazards, ambient wildlife and feel.</p>
         <ul class="worlds" style="margin-top:36px">
@@ -160,10 +176,16 @@
 
     <section class="section" id="features" aria-labelledby="features-title">
       <div class="wrap">
-        <p class="fig"><span>fig. 03</span> <b>what's in the box</b></p>
-        <h2 class="visually-hidden" id="features-title">Features</h2>
+        <p class="fig"><span>fig. 04</span> <b>what's in the box</b></p>
+        <h2 class="h2" id="features-title">Play, build, play together</h2>
+        <p class="lede">Pick a course, make one of your own, or meet friends online.</p>
+        <nav class="btn-row feature-nav" aria-label="Explore game features">
+          <a class="btn btn--sm" href="#physics">Physics &amp; hazards</a>
+          <a class="btn btn--sm" href="#editor">Level editor</a>
+          <a class="btn btn--sm" href="#multiplayer">Online rooms</a>
+        </nav>
 
-        <article class="feature">
+        <article class="feature" id="physics">
           <div>
             <h3>Real physics, readable and fair</h3>
             <p>Spinners, cannons, moving platforms, magnets, portals, breakable walls, slopes, wind and more. Every mechanic behaves the same way every time, so a missed shot always teaches you something.</p>
@@ -178,11 +200,12 @@
           </figure>
         </article>
 
-        <article class="feature feature--flip">
+        <article class="feature feature--flip" id="editor">
           <div>
             <h3>Build anything: a full level editor</h3>
             <p>A creation suite with 20+ tools. Place any mechanic, drag-tune the layout, and the editor checks that your hole is actually solvable before you publish it.</p>
             <p>Share the link, then browse and play a growing library of community holes: like, sort and follow your favorite creators. Bundle favorites into <strong>playlists and gauntlets</strong> and share those too.</p>
+            <p><a class="link-arrow" href="../journal/level-editor/">Inside the level editor</a></p>
           </div>
           <figure class="spec">
             <img src="../assets/media/shot-editor-640.webp" srcset="../assets/media/shot-editor-640.webp 640w, ../assets/media/shot-editor-1200.webp 1200w" sizes="(max-width: 860px) 100vw, 560px" width="1200" height="1250" loading="lazy" decoding="async" alt="The Minigolf Pro level editor with a portal-and-spinner hole under construction">
@@ -190,15 +213,15 @@
           </figure>
         </article>
 
-        <article class="feature">
+        <article class="feature" id="multiplayer">
           <div>
-            <h3>Play together, online</h3>
+            <h3>Play together, online <span class="status status--live">Available now</span></h3>
             <ul>
               <li><strong>2–4 player rooms</strong>, public or invite-only, matched or by code</li>
               <li>Any of the 8 worlds together, in classic, Hard or Mirror variants</li>
               <li>In-room chat and ghost replays of every shot</li>
             </ul>
-            <p style="margin-top:14px">Ranked 1v1 (a Bronze to Diamond ladder) and tournaments are built and on the way. They switch on once the server-side match validator lands.</p>
+            <p style="margin-top:14px"><span class="status status--soon">Coming later</span> Ranked 1v1 (a Bronze to Diamond ladder) and tournaments are built and on the way. They switch on once the server-side match validator lands.</p>
           </div>
           <figure class="spec">
             <img src="../assets/media/shot-multiplayer-640.webp" srcset="../assets/media/shot-multiplayer-640.webp 640w, ../assets/media/shot-multiplayer-1200.webp 1002w" sizes="(max-width: 860px) 100vw, 560px" width="1002" height="498" loading="lazy" decoding="async" alt="An online match: it's Theo's turn on a neon hole">
@@ -259,7 +282,7 @@
 
     <section class="section" id="gallery" aria-labelledby="gallery-title">
       <div class="wrap">
-        <p class="fig"><span>fig. 04</span> <b>from the course</b></p>
+        <p class="fig"><span>fig. 05</span> <b>from the course</b></p>
         <h2 class="h2" id="gallery-title">Holes-in-one, caught on film</h2>
         <div class="gallery" style="margin-top:32px">
           <figure class="spec">
@@ -295,23 +318,6 @@
             <img src="../assets/media/shot-tropical-640.webp" srcset="../assets/media/shot-tropical-640.webp 640w, ../assets/media/shot-tropical-1200.webp 1076w" sizes="(max-width: 520px) 100vw, (max-width: 860px) 50vw, 380px" width="1076" height="952" loading="lazy" decoding="async" alt="A Tropical hole with two ponds, bamboo walls and a palm tree by the cup">
             <figcaption class="anno">tropical · between the ponds</figcaption>
           </figure>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="trailer" aria-labelledby="trailer-title">
-      <div class="wrap">
-        <p class="fig"><span>fig. 05</span> <b>trailer</b></p>
-        <h2 class="h2" id="trailer-title">Watch the trailer</h2>
-        <div class="video-frame" style="margin-top:28px" data-video>
-          <video controls preload="none" playsinline poster="../assets/media/trailer-poster.webp" width="1280" height="720">
-            <source src="../assets/media/trailer-720.mp4" type="video/mp4">
-            <a href="../assets/media/trailer-720.mp4">Download the trailer (MP4)</a>
-          </video>
-          <button class="video-play video-play--low" type="button" data-video-play hidden>
-            <span class="play-disc"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4.5 2.6v10.8l8.8-5.4z" fill="currentColor"/></svg></span>
-            <span class="anno">play the trailer · 0:29</span>
-          </button>
         </div>
       </div>
     </section>

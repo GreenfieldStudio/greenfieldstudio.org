@@ -75,6 +75,9 @@ page disagree, in either direction, so switching it off means setting the token 
 removing the privacy page's paragraph. `"spa": false` keeps the game's own URL tidying
 (`history.replaceState`) from counting as extra visits. The live audit checks the counter is on
 every page and allows only Cloudflare's two hosts as third parties.
+Cloudflare Web Analytics counts page loads, including `/play/`, but does not support custom
+film-play or trailer-play events. Those interactions need a separately configured event collector;
+do not add a new third-party tracker without updating the privacy note and audit allowlist.
 
 ## Domain (Namecheap → GitHub Pages)
 

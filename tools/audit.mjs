@@ -42,6 +42,8 @@ const PAGES = [
   { path: 'privacy/', name: 'privacy' },
   { path: 'journal/', name: 'journal' },
   { path: 'journal/level-critic/', name: 'post-level-critic' },
+  { path: 'journal/coral-reef/', name: 'post-coral-reef' },
+  { path: 'journal/level-editor/', name: 'post-level-editor' },
   { path: 'this-page-does-not-exist/', name: '404', status: 404 },
 ];
 const VIEWPORTS = [
@@ -191,6 +193,28 @@ for (const vp of VIEWPORTS) {
     }
     await page.close();
   }
+  await ctx.close();
+}
+
+{
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.route('https://www.youtube-nocookie.com/**', (route) => route.abort());
+  await page.goto(BASE + 'ambience/', { waitUntil: 'load' });
+  await page.getByRole('link', { name: 'Watch the first film' }).click();
+  const player = page.locator('[data-player]');
+  if (!await player.evaluate((dialog) => dialog.open)) fail('ambience', 'hero film button did not open the player');
+  if (!await player.locator('iframe[src*="liWuRuThk1k"]').count()) fail('ambience', 'player did not load the first film');
+  await page.locator('[data-player-close]').click();
+  if (!await player.locator('iframe').waitFor({ state: 'detached', timeout: 2000 }).then(() => true).catch(() => false)) fail('ambience', 'closing the player did not remove the video');
+  await page.goto(BASE + 'minigolf-pro/', { waitUntil: 'load' });
+  const gameUi = await page.evaluate(() => ({
+    trailerNearTop: document.querySelector('#trailer')?.previousElementSibling?.classList.contains('hero'),
+    live: document.querySelector('#multiplayer .status--live')?.textContent.trim(),
+    soon: document.querySelector('#multiplayer .status--soon')?.textContent.trim(),
+  }));
+  if (!gameUi.trailerNearTop) fail('game page', 'trailer is not directly below the hero');
+  if (gameUi.live !== 'Available now' || gameUi.soon !== 'Coming later') fail('game page', 'multiplayer availability labels missing');
   await ctx.close();
 }
 

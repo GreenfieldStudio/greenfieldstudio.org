@@ -92,13 +92,13 @@ const PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><pat
 
 let block;
 if (db.films.length) {
-  block = `<div class="films" style="margin-top:32px">\n${db.films.map((f) => `          <a class="film" href="https://www.youtube.com/watch?v=${f.id}" data-film="${f.id}" data-film-title="${esc(f.title)}" rel="noopener">
+  block = `<div class="films${db.films.length === 1 ? ' films--featured' : ''}" style="margin-top:32px">\n${db.films.map((f) => `          <a class="film" href="https://www.youtube.com/watch?v=${f.id}" data-film="${f.id}" data-film-title="${esc(f.title)}" rel="noopener">
             <span class="film-media">
               <img src="../assets/media/ambience/films/${f.id}-640.webp" srcset="../assets/media/ambience/films/${f.id}-640.webp 640w, ../assets/media/ambience/films/${f.id}-1280.webp 1280w" sizes="(max-width: 520px) 100vw, (max-width: 860px) 50vw, 380px" width="1280" height="720" loading="lazy" decoding="async" alt="">
               <span class="film-play" aria-hidden="true"><span class="play-disc">${PLAY}</span></span>${f.seconds ? `\n              <span class="film-len">${clock(f.seconds)}</span>` : ''}
             </span>
-            <h3>${esc(f.title)}</h3>
-            <span class="anno">${f.published} · on YouTube</span>
+            <h3>${esc(f.displayTitle || f.title)}</h3>
+            <span class="anno">${f.seconds ? `${Math.round(f.seconds / 60)} min · ` : ''}4K · 60 fps · on YouTube</span>
           </a>`).join('\n')}
         </div>`;
 } else {
