@@ -35,6 +35,7 @@
     "publisher": { "@type": "Organization", "name": "Greenfield Studio", "url": "https://greenfieldstudio.org/" }
   }
   </script>
+  <script src="../../assets/js/site.js" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -59,6 +60,18 @@
         <p class="fig"><span>studio note</span> <b>2026-09-25 · ambience</b></p>
         <h1 class="post-title" id="post-title">Making a reef that never loops</h1>
         <p class="lede">The first Greenfield Ambience film is an hour in a coral reef. It is a recording of a world running in real time, not a short clip stretched to fill an hour.</p>
+        <div class="btn-row post-actions">
+          <a class="btn btn--brass" href="https://www.youtube.com/watch?v=liWuRuThk1k" data-film="liWuRuThk1k" data-film-title="Coral Reef Aquarium" rel="noopener">Watch Coral Reef Aquarium</a>
+          <a class="btn" href="../../ambience/">Explore Ambience</a>
+        </div>
+        <a class="film post-film" href="https://www.youtube.com/watch?v=liWuRuThk1k" data-film="liWuRuThk1k" data-film-title="Coral Reef Aquarium" aria-label="Play Coral Reef Aquarium, one-hour film" rel="noopener">
+          <span class="film-media">
+            <img src="../../assets/media/ambience/films/liWuRuThk1k-640.webp" srcset="../../assets/media/ambience/films/liWuRuThk1k-640.webp 640w, ../../assets/media/ambience/films/liWuRuThk1k-1280.webp 1280w" sizes="(max-width: 760px) 100vw, 760px" width="1280" height="720" decoding="async" alt="">
+            <span class="film-play" aria-hidden="true"><span class="play-disc"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4.5 2.6v10.8l8.8-5.4z" fill="currentColor"/></svg></span></span>
+            <span class="film-len">1:00:00</span>
+          </span>
+          <span class="anno">one hour · 4K 60 fps · no music</span>
+        </a>
         <div class="post-body">
           <h2>Life in the background</h2>
           <p>The reef is more than a still scene with a camera in front of it. Clownfish settle into anemones, blue tangs and moorish idols pass through the kelp, a lionfish patrols the rocks, and a manta ray glides above. The movement of the water and the changing sunlight hold the scene together while the smaller encounters come and go.</p>
@@ -75,13 +88,23 @@
           <h2>Watch the first world</h2>
           <p>Coral Reef Aquarium is live now. The next Greenfield Ambience world, Enchanted Castle, is still in production.</p>
           <div class="btn-row" style="margin-top:24px">
-            <a class="btn btn--brass" href="../../ambience/">Watch Coral Reef Aquarium</a>
+            <a class="btn btn--brass" href="https://www.youtube.com/watch?v=liWuRuThk1k" data-film="liWuRuThk1k" data-film-title="Coral Reef Aquarium" rel="noopener">Watch Coral Reef Aquarium</a>
             <a class="btn" href="https://www.youtube.com/@Greenfield.Ambience?sub_confirmation=1" rel="noopener">Follow the channel</a>
           </div>
         </div>
       </div>
     </article>
   </main>
+  <dialog class="player" data-player aria-label="Film player">
+    <div class="player-frame" data-player-frame></div>
+    <div class="player-bar">
+      <p data-player-title></p>
+      <div class="btn-row">
+        <a class="btn btn--sm" href="https://www.youtube.com/watch?v=liWuRuThk1k" rel="noopener" data-player-watch>Watch on YouTube</a>
+        <button class="btn btn--sm" type="button" data-player-close autofocus>Close</button>
+      </div>
+    </div>
+  </dialog>
   <footer class="site-footer">
     <div class="wrap">
       <div class="footer-grid">

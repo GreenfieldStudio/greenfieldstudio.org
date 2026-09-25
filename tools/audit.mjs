@@ -207,6 +207,18 @@ for (const vp of VIEWPORTS) {
   if (!await player.locator('iframe[src*="liWuRuThk1k"]').count()) fail('ambience', 'player did not load the first film');
   await page.locator('[data-player-close]').click();
   if (!await player.locator('iframe').waitFor({ state: 'detached', timeout: 2000 }).then(() => true).catch(() => false)) fail('ambience', 'closing the player did not remove the video');
+  await page.goto(BASE + 'journal/coral-reef/', { waitUntil: 'load' });
+  const reefPlayer = page.locator('[data-player]');
+  if (await reefPlayer.locator('iframe').count()) fail('reef article', 'film loaded before a visitor clicked Play');
+  if (!await page.locator('a.post-film[data-film="liWuRuThk1k"]').count()) fail('reef article', 'clickable film poster missing');
+  await page.locator('.post-actions a[data-film]').click();
+  if (!await reefPlayer.evaluate((dialog) => dialog.open)) fail('reef article', 'intro film button did not open the player');
+  if (!await reefPlayer.locator('iframe[src*="liWuRuThk1k"]').count()) fail('reef article', 'player did not load the reef film');
+  await page.locator('[data-player-close]').click();
+  await page.goto(BASE + 'journal/level-editor/', { waitUntil: 'load' });
+  const editorCtas = await page.locator('a[data-create-menu]').evaluateAll((links) => links.map((link) => link.href));
+  if (editorCtas.length !== 2 || editorCtas.some((href) => href !== BASE + 'play/')) fail('editor article', 'editor action does not open the game menu');
+  if (!await page.getByText('In the game menu, choose Create → Open Editor.').count()) fail('editor article', 'Create menu instructions missing');
   await page.goto(BASE + 'minigolf-pro/', { waitUntil: 'load' });
   const gameUi = await page.evaluate(() => ({
     trailerNearTop: document.querySelector('#trailer')?.previousElementSibling?.classList.contains('hero'),
