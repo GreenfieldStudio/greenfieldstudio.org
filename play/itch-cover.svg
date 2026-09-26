@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="630" height="500" viewBox="0 0 630 500">
+  <!--
+    Minigolf Pro — itch.io cover image (630x500). Logo-forward, matches the
+    page banner: flat #0B1430 base (merges with site bg), gold->teal swoosh +
+    dimpled ball (exact LogoMark geometry from src/core/brand.jsx), Fredoka
+    "Minigolf Pro" two-line wordmark, gold tagline pill, faint golf-crest.
+    Composition from the design judge-panel (winner: lockup-plus-subtle-golf).
+    Render to PNG via Playwright (Fredoka webfont) -> public/itch-cover.png.
+  -->
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&amp;display=swap');
+      .wm { font-family: 'Fredoka', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+    </style>
+    <!-- Swoosh sweep — gold->teal across the swoosh bbox -->
+    <linearGradient id="sweepBall" gradientUnits="userSpaceOnUse" x1="171" y1="0" x2="399" y2="0">
+      <stop offset="0%" stop-color="#FFD93D"/>
+      <stop offset="100%" stop-color="#4ECDC4"/>
+    </linearGradient>
+    <!-- Wordmark sweep — one continuous ramp across BOTH lines -->
+    <linearGradient id="sweepWord" gradientUnits="userSpaceOnUse" x1="78" y1="0" x2="552" y2="0">
+      <stop offset="0%" stop-color="#FFD93D"/>
+      <stop offset="100%" stop-color="#4ECDC4"/>
+    </linearGradient>
+    <radialGradient id="ball" cx="0.35" cy="0.35" r="0.7">
+      <stop offset="0%"   stop-color="#ffffff"/>
+      <stop offset="60%"  stop-color="#f0f0f0"/>
+      <stop offset="100%" stop-color="#d8d8d8"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%"   stop-color="#4ECDC4" stop-opacity="0.18"/>
+      <stop offset="48%"  stop-color="#4ECDC4" stop-opacity="0.07"/>
+      <stop offset="100%" stop-color="#4ECDC4" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="ballclip"><circle cx="315" cy="158" r="72"/></clipPath>
+    <filter id="softshadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
+  </defs>
+
+  <!-- Field — flat site bg color -->
+  <rect width="630" height="500" fill="#0B1430"/>
+
+  <!-- Teal backlight glow (fades to 0 before the edges) -->
+  <ellipse cx="315" cy="190" rx="300" ry="240" fill="url(#glow)"/>
+
+  <!-- Faint star field (inset >=28px from edges) -->
+  <g fill="#ffffff">
+    <circle cx="70"  cy="60"  r="1.4" opacity="0.30"/>
+    <circle cx="152" cy="44"  r="1.0" opacity="0.22"/>
+    <circle cx="268" cy="52"  r="1.5" opacity="0.34"/>
+    <circle cx="430" cy="48"  r="1.2" opacity="0.28"/>
+    <circle cx="560" cy="72"  r="1.4" opacity="0.32"/>
+    <circle cx="598" cy="150" r="1.0" opacity="0.20"/>
+    <circle cx="52"  cy="170" r="1.3" opacity="0.28"/>
+    <circle cx="98"  cy="300" r="1.0" opacity="0.22"/>
+    <circle cx="548" cy="210" r="1.3" opacity="0.30"/>
+    <circle cx="588" cy="300" r="1.1" opacity="0.24"/>
+    <circle cx="40"  cy="400" r="1.2" opacity="0.30"/>
+    <circle cx="510" cy="360" r="1.1" opacity="0.24"/>
+    <circle cx="300" cy="40"  r="1.0" opacity="0.24"/>
+    <circle cx="392" cy="60"  r="1.2" opacity="0.26"/>
+    <circle cx="118" cy="420" r="1.0" opacity="0.20"/>
+    <circle cx="575" cy="410" r="1.3" opacity="0.28"/>
+  </g>
+
+  <!-- Faint golf-crest ground plane (near-bg; reads only on close inspection) -->
+  <path d="M 60 470 Q 315 452 570 470" fill="none" stroke="#122146" stroke-width="2" opacity="0.6"/>
+
+  <!-- ===== Logo mark: ball + swoosh (LogoMark geometry, ball@315,158 r=72) ===== -->
+  <path d="M 156.6 237.2 Q 257.4 28.4 408.6 114.8"
+        fill="none" stroke="url(#sweepBall)" stroke-width="36" stroke-linecap="round"/>
+  <ellipse cx="318" cy="231.4" rx="66.2" ry="21.6" fill="rgba(0,0,0,0.40)" filter="url(#softshadow)"/>
+  <circle cx="315" cy="158" r="72" fill="url(#ball)"/>
+  <circle cx="297"   cy="149.4" r="9.36" fill="rgba(0,0,0,0.12)"/>
+  <circle cx="336.6" cy="142.2" r="9.36" fill="rgba(0,0,0,0.12)"/>
+  <circle cx="318.6" cy="179.6" r="9.36" fill="rgba(0,0,0,0.12)"/>
+  <ellipse cx="301" cy="140" rx="27" ry="16" transform="rotate(-25 301 140)"
+           fill="rgba(255,255,255,0.55)" clip-path="url(#ballclip)"/>
+
+  <!-- ===== Wordmark — two lines, one continuous gradient ramp ===== -->
+  <text class="wm" x="315" y="300" text-anchor="middle" font-size="96" font-weight="700"
+        letter-spacing="-1" fill="url(#sweepWord)">Minigolf</text>
+  <text class="wm" x="315" y="388" text-anchor="middle" font-size="112" font-weight="700"
+        fill="url(#sweepWord)">Pro</text>
+
+  <!-- ===== Tagline — gold pill (brightest small element) ===== -->
+  <rect x="150" y="406" width="330" height="30" rx="15" fill="#FFD93D"/>
+  <text class="wm" x="315" y="427" text-anchor="middle" font-size="19" font-weight="600"
+        letter-spacing="1.5" fill="#0B1430">FREE &#183; PLAYS IN YOUR BROWSER</text>
+
+  <!-- ===== Feature lines — two centered rows, muted slate ===== -->
+  <text class="wm" x="315" y="458" text-anchor="middle" font-size="16" font-weight="600"
+        letter-spacing="1" fill="#aec2d6">80 HOLES &#183; 8 WORLDS</text>
+  <text class="wm" x="315" y="480" text-anchor="middle" font-size="16" font-weight="600"
+        letter-spacing="1" fill="#aec2d6">LEVEL EDITOR &#183; ONLINE MULTIPLAYER</text>
+</svg>

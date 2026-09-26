@@ -1,0 +1,56 @@
+﻿{
+  "version": 1,
+  "worlds": {
+    "0": {
+      "bpm": 72,
+      "beatsPerBar": 4,
+      "barsPerLoop": 8,
+      "crossfadeSeconds": 0.25,
+      "layers": {
+        "pad": "/audio/stems/world0/pad.ogg",
+        "bass": "/audio/stems/world0/bass.ogg",
+        "drums": "/audio/stems/world0/drums.ogg",
+        "melody": "/audio/stems/world0/melody.ogg",
+        "tension": "/audio/stems/world0/tension.ogg"
+      },
+      "presets": {
+        "base": {
+          "pad": 1.0,
+          "bass": 0.95,
+          "drums": 0.8,
+          "melody": 0.7,
+          "tension": 0.0
+        },
+        "tension": {
+          "drums": 0.95,
+          "melody": 0.6,
+          "tension": 0.95
+        },
+        "anticipation": {
+          "pad": 1.1,
+          "drums": 0.35,
+          "melody": 0.45,
+          "tension": 0.0
+        },
+        "anticipation_tension": {
+          "pad": 1.1,
+          "drums": 0.4,
+          "melody": 0.45,
+          "tension": 0.5
+        },
+        "bogey": {
+          "pad": 0.7,
+          "bass": 0.55,
+          "drums": 0.0,
+          "melody": 0.0,
+          "tension": 0.0
+        },
+        "streak": {
+          "drums": 1.0,
+          "melody": 0.9,
+          "tension": 0.3
+        }
+      }
+    }
+  }
+}

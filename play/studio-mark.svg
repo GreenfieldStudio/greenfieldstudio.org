@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 100 100">
+  <defs>
+    <radialGradient id="sun" cx="0.42" cy="0.38" r="0.62">
+      <stop offset="0%" stop-color="#FFE873"/>
+      <stop offset="100%" stop-color="#FFD93D"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="50" cy="36" r="22" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFE873" stop-opacity="0.45"/>
+      <stop offset="50%" stop-color="#FFD93D" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#FFD93D" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Sun halo (atmosphere) -->
+  <circle cx="50" cy="36" r="22" fill="url(#halo)"/>
+  <!-- Sun disc -->
+  <circle cx="50" cy="36" r="13" fill="url(#sun)"/>
+  <!-- Back hill — taller, peak left -->
+  <path d="M 0 66 Q 25 38 100 60 L 100 100 L 0 100 Z" fill="#5BA85F"/>
+  <!-- Back ridge highlight -->
+  <path d="M 4 64.8 Q 25 36.8 96 59.2" fill="none" stroke="#A8DDB5" stroke-width="2.6" stroke-linecap="round"/>
+  <!-- Front hill — peak right -->
+  <path d="M 0 92 Q 72 54 100 78 L 100 100 L 0 100 Z" fill="#2D7A3E"/>
+  <!-- Front ridge highlight (subtle) -->
+  <path d="M 5 90.5 Q 72 52.5 95 77" fill="none" stroke="#5BA85F" stroke-width="2.2" stroke-linecap="round" opacity="0.55"/>
+</svg>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — Minigolf Pro</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f1117;color:#c8ccd4;line-height:1.7;padding:40px 20px}
+    .wrap{max-width:700px;margin:0 auto}
+    h1{color:#fff;font-size:2rem;margin-bottom:8px}
+    .date{color:#666;font-size:0.875rem;margin-bottom:40px}
+    h2{color:#e0e4ef;font-size:1.15rem;margin:32px 0 10px;border-bottom:1px solid #222;padding-bottom:6px}
+    p,li{font-size:0.95rem;margin-bottom:10px;color:#b0b4be}
+    ul{padding-left:20px;margin-bottom:10px}
+    a{color:#4ECDC4;text-decoration:none}
+    a:hover{text-decoration:underline}
+    .back{display:inline-block;margin-bottom:32px;color:#4ECDC4;font-size:0.9rem}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a href="./" class="back">← Back to game</a>
+    <h1>Privacy Policy</h1>
+    <p class="date">Last updated: September 2026</p>
+
+    <h2>Who We Are</h2>
+    <p>Minigolf Pro is developed by Greenfield Studio. This policy explains how we collect and use data when you play Minigolf Pro.</p>
+
+    <h2>Data We Collect</h2>
+    <ul>
+      <li><strong>Account data</strong> — email address and display name if you create an account.</li>
+      <li><strong>Game progress</strong> — scores, unlocked cosmetics, settings, and other gameplay state saved to your account.</li>
+      <li><strong>Community content</strong> — custom holes you publish, including your display name as the author.</li>
+      <!-- R3709 - was: "aggregate, anonymous event data ... No personally
+           identifiable information is included." Inaccurate on three counts: every
+           event carries a stable identifier (auth uid, or a persisted anonymous
+           id when signed out), so the data is PSEUDONYMOUS not anonymous; there is
+           a second sink (our own Firestore telemetry store) that went unmentioned;
+           and crash/error reporting is always-on rather than consent-gated. -->
+      <li><strong>Usage analytics</strong> — gameplay event data (e.g. holes completed, features used), used to improve the game. This is <em>off by default</em> and only collected if you turn it on in Settings. Events are pseudonymous, not anonymous: each carries your account identifier, or a randomly generated one if you are playing as a guest. They are stored by us and, where enabled, by Firebase Analytics.</li>
+      <li><strong>Error and crash reports</strong> — always collected, including when analytics are off, because we cannot fix crashes we never see. These contain technical diagnostics and your account identifier. Any free text is scrubbed of email addresses, web addresses and file paths before it is sent.</li>
+    </ul>
+    <!-- R3709 - was: "Anonymous (guest) play stores data only on your device. No
+         account data is sent to our servers unless you sign up." That was FALSE:
+         guest play signs in anonymously and cloud-syncs progress like any other
+         account. Corrected rather than removed so the guest-vs-account difference
+         stays clear. -->
+    <p>Guest (anonymous) play does not ask for an email or display name, but it still creates an anonymous account and syncs your game progress to our servers. The difference is what we collect, not where it is stored. Because a guest account is tied to your browser or device, clearing your browser data may make that progress unrecoverable &mdash; linking an email preserves it.</p>
+
+    <h2>How We Use Your Data</h2>
+    <ul>
+      <li>Syncing your game progress across devices.</li>
+      <li>Displaying your display name on holes you publish to the community.</li>
+      <li>Improving the game based on aggregate usage patterns.</li>
+    </ul>
+    <p>We do not sell your data. We do not use it for advertising.</p>
+
+    <h2>Third-Party Services</h2>
+    <p>We use <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener">Google Firebase</a> for authentication, cloud save, and analytics. Firebase is governed by Google's privacy policy.</p>
+
+    <h2>Data Retention</h2>
+    <!-- R3709 - the previous wording implied deletion was total; it was not.
+         R3715 - leaderboard scores and ghost runs ARE now erased automatically
+         (deleteAllUserData sweeps them by collection-group query), so they have moved
+         out of the retained list below. Keep this paragraph and that list in step with
+         what storage.js actually does - the whole reason this section was rewritten is
+         that it once claimed more than the code delivered. -->
+    <p>Your account data is kept for as long as your account exists. If you delete your account, we delete your saved progress and your leaderboard scores, anonymise the community holes you published, and remove your friends, friend requests, saved replays, recorded ghost runs, and the follows you created. If any step of that erasure fails, we stop and leave your account in place rather than deleting it half-finished, so you can try again.</p>
+    <p>Some records are not covered by that automatic process. These may keep your display name or an account identifier until we remove them by hand:</p>
+    <ul>
+      <li>comments you left on community holes, and playlists you published;</li>
+      <li>tournament standings, which record the players in a bracket;</li>
+      <li>moderation reports involving you, which we keep deliberately so that deleting an account cannot erase a record of abuse;</li>
+      
+      <li>duel challenges you sent or received, which record the display names of both players;</li>
+      <li>multiplayer game invites, which record the sender&rsquo;s display name and both players&rsquo;
+          account identifiers;</li>
+      <li>likes and reactions you left on other players&rsquo; holes, playlists and replays, and the
+          room rosters of multiplayer matches you joined;</li>
+      <!-- R4482 (BA-95) - added by the derived erasure census, which is the first check in this
+           repo capable of noticing an undisclosed collection. events/{eventId}/claims/{uid} is a
+           uid-KEYED subcollection row written by claimEventReward (storage.js), and the sweep does
+           not touch it. It was the fifth unswept-and-undisclosed record the old four-item pin was
+           structurally unable to see. -->
+      <li>event reward claims, which record that your account claimed a limited-time reward;</li>
+      <li>a small number of older follow records created before July 2026, which are not always reachable by the automatic process;</li>
+      <!-- R4482 (BA-96, same class one file over) - this used to read "which expire on their own
+           retention schedule". Checked: firestore.indexes.json has four fieldOverrides, all
+           "ttl": false, and none is for telemetry_events; functions/index.js exports nothing and
+           records that the project is on the Spark plan, where Cloud Functions cannot deploy. No
+           schedule exists, so the sentence promised a mechanism the build does not have. -->
+      <li>diagnostic and crash reports, which are stored until we remove them by hand.</li>
+    </ul>
+    <p>If you want any of these removed, email us at the address below and we will erase them manually.</p>
+
+    <h2>Your Rights</h2>
+    <p>You have the right to access, correct, or delete your personal data at any time.</p>
+    <ul>
+      <li><strong>Delete your account</strong> — go to the account panel in-game and tap <em>Delete Account &amp; Data</em>. This permanently erases your progress and anonymises your published holes.</li>
+      <li><strong>Data requests</strong> — email us at <a href="mailto:hello@greenfieldstudio.org">hello@greenfieldstudio.org</a>.</li>
+    </ul>
+
+    <h2>Children</h2>
+    <p>Minigolf Pro is not directed at children under 13. We do not knowingly collect data from children under 13. If you believe a child has provided us personal data, please contact us so we can delete it.</p>
+
+    <h2>Changes</h2>
+    <p>We may update this policy from time to time. The "last updated" date at the top will reflect any changes. Continued use of the game after changes constitutes acceptance.</p>
+
+    <h2>Contact</h2>
+    <p>Questions? Email <a href="mailto:hello@greenfieldstudio.org">hello@greenfieldstudio.org</a>.</p>
+  </div>
+</body>
+</html>

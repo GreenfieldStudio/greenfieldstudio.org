@@ -1,0 +1,27 @@
+{
+  "name": "MiniGolf Pro",
+  "short_name": "MiniGolf",
+  "description": "80 holes across 8 worlds, full level editor, online multiplayer, daily challenges, and community holes.",
+  "id": ".",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0a1628",
+  "theme_color": "#FFD93D",
+  "categories": ["games"],
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./icon-192.svg", "sizes": "192x192", "type": "image/svg+xml" },
+    { "src": "./icon.svg", "sizes": "512x512", "type": "image/svg+xml" }
+  ],
+  "screenshots": [
+    { "src": "./og-image.png", "sizes": "1200x630", "type": "image/png", "form_factor": "wide", "label": "MiniGolf Pro — 8 worlds, 72 holes, full level editor" },
+    { "src": "./og-image.png", "sizes": "1200x630", "type": "image/png", "form_factor": "narrow", "label": "MiniGolf Pro — play on mobile" }
+  ],
+  "shortcuts": [
+    { "name": "Play", "url": "./?play=1", "description": "Jump straight into the game" },
+    { "name": "Editor", "url": "./?editor=1", "description": "Open the level editor" }
+  ]
+}

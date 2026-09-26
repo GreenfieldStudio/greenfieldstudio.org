@@ -1,0 +1,46 @@
+{
+  "version": 2,
+  "_note": "SFX manifest. Drop OGG files here; AudioEngine._loadSamples() overrides procedural fallbacks on startup. Missing files silently fall back to procedural — no code changes needed.",
+
+  "format": {
+    "codec": "OGG Vorbis",
+    "sampleRate": 44100,
+    "channels": 1,
+    "quality": 6,
+    "maxDurationSeconds": 2.0,
+    "note": "Mono preferred. Trim silence at start/end. Normalize to -3 dBFS peak."
+  },
+
+  "license": {
+    "accepted": ["CC0", "CC-BY 3.0", "CC-BY 4.0"],
+    "rejected": ["CC-BY-NC", "CC-BY-SA", "CC-BY-ND"],
+    "attributionFile": "AUDIO_CREDITS.md",
+    "_note": "R4016 — AUDIO_CREDITS.md now EXISTS. It had been named here since v1 and had never existed on any ref, so no attribution ever shipped, on itch or either portal. Settled credits live there and ship with the build; the working provenance audit, with unresolved items and open actions, is tasks/audio-licensing-audit.md and is deliberately NOT shipped. Do not add an OGG here without recording its source and licence in both."
+  },
+
+  "present": {
+    "_note": "R4016 — corrected against the tree. 18 OGG files ship and all 18 are loaded by _loadSamples(); the two sets are identical, so there are no shipped-but-unloaded files and no loaded-but-missing ones. The old count read '18 samples live' while naming eagle/wallcrack/spike/coinEarn that no longer ship, and listed door/holeSink/sand/ice/lava under proceduralOnly while they were shipping AND loading, with coinEarn in both blocks at once.",
+    "shots": ["hit.ogg", "putt.ogg", "driver.ogg", "wall.ogg"],
+    "scoring": ["hole.ogg", "holeinone.ogg", "holeSink.ogg", "splash.ogg", "birdie.ogg", "bogey.ogg"],
+    "obstacles": ["bumper.ogg", "boost.ogg", "portal.ogg", "break.ogg", "door.ogg"],
+    "terrain": ["sand.ogg", "ice.ogg", "lava.ogg"]
+  },
+
+  "removed": {
+    "_note": "R4016 — deleted on LICENSING grounds with the developer's authorisation. Do NOT restore these files; a replacement must be NEWLY SOURCED with its licence recorded in AUDIO_CREDITS.md and tasks/audio-licensing-audit.md. Every key below still SOUNDS — each falls to a real layered generator in BufferFactory.js, verified audible rather than silent. They are deliberately NOT duplicated into proceduralOnly so the reason for each missing OGG stays attached to it.",
+    "eagle.ogg": "Vorbis tags read TITLE='Saga Victory Fanfare Short', ALBUM='Game SFX', ARTIST='Final Boss', TRACKNUMBER=7 — the structure of a released, catalogued product, not a freesound CC0 sample. Also exceeded this manifest's own 2.0s ceiling at 3.38s. Falls to genEagleFallback().",
+    "coinEarn.ogg": "ARTIST='Mattias Michael Lahoud', TITLE='8BIT COIN 02' — numbered pack-item naming; 0 freesound results. Falls to genCoinEarnFallback(). Already absent from the tree before R4016 while still in the load list, so it 404'd on every load.",
+    "wallcrack.ogg": "ARTIST='Richard Torres', GENRE='Sound Clip' — a stock-library convention; 0 freesound results. Falls to genWallcrackFallback(). Same 404-per-load state as coinEarn.",
+    "spike.ogg": "Orphaned — shipped in every build but absent from the load map and referenced nowhere in src/, so removing it changed nothing at runtime. Carried an ARTIST tag for qubodup, who releases under CC BY rather than CC0.",
+    "spring.ogg": "Orphaned — same as spike.ogg; no authorship metadata."
+  },
+
+  "proceduralOnly": {
+    "_note": "Sounds with multi-layer procedural generators and no OGG. All sound good. Optional OGG upgrade paths wired in _loadSamples(). R2729 removed 6 never-bundled entries (magnet/lipOut/land/button/gate/spinner) from the load list after they 404'd on itch every load — re-add a line only when a real OGG ships. R4016 applied the same rule to the three above.",
+    "terrain": ["conveyor", "magnet"],
+    "obstacles": ["button", "gate", "gumball", "spinner", "ramp", "pinner", "land", "lipOut"],
+    "ui": ["unlock", "maxout", "next", "uiClick", "celebration", "streak", "coinEarn", "wallcrack", "eagle"],
+    "spinWheel": ["spinWheel", "spinTick", "spinWin", "spinWinBig"],
+    "weather": ["rain", "windgust"]
+  }
+}

@@ -1,0 +1,1 @@
+import{registerPlugin as t}from"./index-DgKdk5nE.js";var a,e,r,D;(e=a||(a={})).Dark="DARK",e.Light="LIGHT",e.Default="DEFAULT",(D=r||(r={})).None="NONE",D.Slide="SLIDE",D.Fade="FADE";const o=r,i=a,E=t("StatusBar");export{r as Animation,E as StatusBar,o as StatusBarAnimation,i as StatusBarStyle,a as Style};

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Greenfield Studio — Journal</title>
+  <subtitle>Notes from the workshop: how the games and worlds get built, measured and tuned.</subtitle>
+  <link href="https://greenfieldstudio.org/journal/feed.xml" rel="self"/>
+  <link href="https://greenfieldstudio.org/journal/"/>
+  <id>https://greenfieldstudio.org/journal/</id>
+  <updated>2026-09-27T12:00:00Z</updated>
+  <author><name>Greenfield Studio</name></author>
+  <entry>
+    <title>Making a reef that never loops</title>
+    <link href="https://greenfieldstudio.org/journal/coral-reef/"/>
+    <id>https://greenfieldstudio.org/journal/coral-reef/</id>
+    <published>2026-09-25T12:00:00Z</published>
+    <updated>2026-09-25T12:00:00Z</updated>
+    <summary>A real-time reef, its own soundscape, and one uninterrupted hour of calm in the first Greenfield Ambience film.</summary>
+  </entry>
+  <entry>
+    <title>From a blank green to a playable hole</title>
+    <link href="https://greenfieldstudio.org/journal/level-editor/"/>
+    <id>https://greenfieldstudio.org/journal/level-editor/</id>
+    <published>2026-09-25T11:00:00Z</published>
+    <updated>2026-09-25T11:00:00Z</updated>
+    <summary>A closer look at the Minigolf Pro level editor: place mechanics, test a hole, then share it.</summary>
+  </entry>
+  <entry>
+    <title>The critic that plays every hole first</title>
+    <link href="https://greenfieldstudio.org/journal/level-critic/"/>
+    <id>https://greenfieldstudio.org/journal/level-critic/</id>
+    <published>2026-09-24T12:00:00Z</published>
+    <updated>2026-09-27T12:00:00Z</updated>
+    <summary>Devlog #1: a physics simulator plays every hole in Minigolf Pro thousands of times and files complaints. Then the critic gets checked too — against the real game.</summary>
+  </entry>
+</feed>
