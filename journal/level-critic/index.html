@@ -96,10 +96,11 @@
 
           <h2>Checking the checker</h2>
           <p>A critic is only useful if it's honest, so the critic gets measured too, against the real game.</p>
-          <p>The clearest example is Switch Room, a Tropical puzzle hole where a button opens a door. For a while the simulator's newcomer-hardness score (0 is trivial, 100 is brutal) rated it <strong>98</strong>. Nearly impossible. The hole wasn't the problem. The simulated newcomer didn't know buttons could be pressed. Once the model learned to press them, the same hole measured <strong>62</strong>: a real challenge, not a wall. A later change added a gentle slope that carries first-timers onto the button.</p>
+          <p>The clearest example is Switch Room, a Tropical puzzle hole where a button opens a door. The simulator's newcomer-hardness score (0 is trivial, 100 is brutal) called it brutal, and for a while I blamed the simulator: its newcomer couldn't carry a pressed button from one shot to the next, so I filed the score as a blind spot and left the hole alone. Then I taught the simulated newcomer to press buttons. The score didn't fall. It rose, from <strong>93</strong> to <strong>98</strong>. The critic had been right and I had been wrong: a first-timer aims at the cup, not at the button, so the door rarely opened for them.</p>
+          <p>So the hole changed instead. A gap in the wall, a bigger button and a gentle pull at the cup brought it to <strong>62</strong>. A later change opened the gap wider and tilted the grass, so a ball headed for the cup drifts onto the button on its way. Played in the real game engine by the same simulated first-timer, the original hole went unfinished (not holed within seven strokes) <strong>81%</strong> of the time. Today's version: <strong>17%</strong>.</p>
           <figure class="spec">
             <img src="../../assets/media/journal/switch-room-640.webp" srcset="../../assets/media/journal/switch-room-640.webp 640w, ../../assets/media/journal/switch-room-1200.webp 1200w" sizes="(max-width: 760px) 100vw, 680px" width="1200" height="466" loading="lazy" decoding="async" alt="Switch Room: a Tropical hole where a button opens a door on the way to the cup">
-            <figcaption class="anno">fig. 02 — switch room, tropical world: 98 → 62 once the simulator could press the button</figcaption>
+            <figcaption class="anno">fig. 02 — switch room, tropical world: first-timers who never finish, 81% → 17% across two redesigns</figcaption>
           </figure>
           <p>The same habit caught a subtler gap. The real game has a small gravity well that pulls a slow ball into the cup, and the simulator didn't. Shots the game would sink were being scored as near-misses. Teaching the simulator about the well cut its average error against the real game from <strong>13.0 to 4.3 percentage points</strong> on how often newcomers fail a hole.</p>
 
@@ -110,6 +111,7 @@
           <h2>Where it stands</h2>
           <p>Today <strong>70 of the 80 holes</strong> pass every check the critic runs. The other ten carry open warnings, which I'll either fix or argue with.</p>
           <p>Play it, and tell me which hole the critic should have rejected.</p>
+          <p><em>Correction, 27 September 2026: an earlier version of this post said the simulator was wrong about Switch Room, and that teaching it to press buttons brought the score down to 62. It was the other way round: the simulator was right, and redesigning the hole brought the score down.</em></p>
           <div class="btn-row" style="margin-top:24px">
             <a class="btn btn--brass" href="../../play/?play=1">
               <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4.5 2.6v10.8l8.8-5.4z" fill="currentColor"/></svg>
