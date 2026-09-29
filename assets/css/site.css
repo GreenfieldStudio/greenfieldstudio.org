@@ -675,7 +675,8 @@ section[id] { scroll-margin-top: 92px; }
 .player-frame { aspect-ratio: 16 / 9; background: #000; }
 .player-frame iframe { display: block; width: 100%; height: 100%; border: 0; }
 /* a Short plays in a portrait frame, sized so the frame and its bar fit the viewport */
-.player[data-shape="short"] { width: min(96vw, 420px, calc((100vh - 110px) * 0.5625)); }
+.player[data-shape="short"] { width: min(96vw, 420px, calc((100vh - 130px) * 0.5625)); }
+@supports (height: 100dvh) { .player[data-shape="short"] { width: min(96vw, 420px, calc((100dvh - 130px) * 0.5625)); } }
 .player[data-shape="short"] .player-frame { aspect-ratio: 9 / 16; }
 .player-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding: 10px 12px; background: var(--field-deep); border-top: 1px solid var(--hair); }
 .player-bar p { margin: 0; font-size: 15px; color: var(--cream-2); }

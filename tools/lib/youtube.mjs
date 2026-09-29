@@ -1,7 +1,7 @@
 // Shared by tools/sync-ambience.mjs and tools/sync-shorts.mjs: read a channel's public Atom feed
 // (no API key; it lists public videos only, newest first), self-host thumbnails as WebP, and turn a
 // feed's text into HTML-safe strings. Nothing here writes to the site.
-import { writeFileSync, rmSync } from 'node:fs';
+import { writeFileSync, rmSync, readdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -36,6 +36,27 @@ export async function webp(url, out, vf) {
   const x = spawnSync('ffmpeg', ['-v', 'error', '-y', '-i', tmp, '-vf', vf, '-c:v', 'libwebp', '-quality', '82', out]);
   rmSync(tmp, { force: true });
   return x.status === 0;
+}
+
+/**
+ * Is this video really gone (deleted or made private)? The feed lists only a channel's newest ~15
+ * videos, so "not in the feed" means nothing by itself. oEmbed answers 200 for a public video and
+ * 401/403/404 for a private or deleted one. A network error or anything else counts as NOT gone:
+ * a film stays on the page unless YouTube says it has left.
+ */
+export async function isGone(id) {
+  try {
+    const r = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${id}`)}&format=json`, { headers: UA });
+    return r.status === 401 || r.status === 403 || r.status === 404;
+  } catch (_) { return false; }
+}
+
+/** Delete thumbnails in `dir` whose name starts with an id that is no longer listed (files that match no id are left alone). */
+export function pruneThumbs(dir, keepIds) {
+  for (const f of readdirSync(dir)) {
+    const id = /^([A-Za-z0-9_-]{11})(?:-\d+)?\.webp$/.exec(f)?.[1];
+    if (id && !keepIds.includes(id)) rmSync(join(dir, f), { force: true });
+  }
 }
 
 /** The length in seconds, from the watch page (the feed doesn't carry it). null if unavailable. */

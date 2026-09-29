@@ -51,7 +51,8 @@ Every number in a post should come from a real tool run or a measurement in the 
 **Greenfield Ambience films** come from the channel's public feed: `sync-ambience` self-hosts each
 thumbnail, records the film in `assets/media/ambience/films/films.json` and rewrites the list on
 `/ambience/`. Unlisted, private or still-processing uploads aren't in the feed, so they stay off the
-site by themselves; with no public film the page shows a "coming soon" card. A film plays in
+site by themselves; a film that is no longer in the feed is removed only if YouTube (oEmbed) says it
+is private or deleted, because the feed reaches back just ~15 videos; with no public film the page shows a "coming soon" card. A film plays in
 YouTube's privacy-enhanced player (youtube-nocookie.com) inside a dialog, created only on click.
 Each card's length, "4K" and frame rate are read from the film's own description, so a spec is never
 shown that the video doesn't state.
@@ -59,7 +60,9 @@ shown that the video doesn't state.
 **Shorts** on the home page ("on the channel") work the same way: `sync-shorts` reads the Greenfield
 Studio feed, keeps the six newest videos the feed links as `/shorts/` (long videos on that channel are
 ignored), self-hosts the picture from the middle third of each Short's thumbnail, and plays it in the
-same dialog, in a portrait frame.
+same dialog, in a portrait frame. If a new Short has no full-size thumbnail yet it uses a smaller one
+(`lowres` in `shorts.json`) and tries again on the next runs; a Short with no thumbnail at all is left off
+until it has one.
 
 **Films and Shorts update themselves.** `.github/workflows/videos.yml` runs every day (05:23 UTC) and
 on demand (Actions → Refresh videos → Run workflow; tick "redeploy" to publish with no change). When
@@ -67,7 +70,9 @@ the feeds differ from the committed lists it commits only the generated files (`
 `index.html`, `assets/media/ambience/films/`, `assets/media/shorts/`) straight to `main` as
 `github-actions[bot]`, then publishes with `deploy.mjs --push --base .live`. CI has only `main`, so
 `--base` borrows the game build and the press downloads from the live `gh-pages` branch; the game is
-never rebuilt there. It refuses to run if any other file changed, and a feed that comes back empty is
+never rebuilt there. It publishes whenever the live lists differ from `main`'s, so a deploy that failed
+after its commit is retried the next day; publishing sends everything on `main`, so merging to `main`
+means "approved to go live". It refuses to run if any other file changed, and a feed that comes back empty is
 treated as a bad response, not as "every video was removed". `npm run audit` fails if a page differs
 from its list (`sync-ambience --check`, `sync-shorts --check`). GitHub pauses scheduled workflows
 after 60 days without repository activity; any commit restarts them.

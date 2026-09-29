@@ -16,7 +16,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { strictOptions } from './lib/args.mjs';
-import { readFeed, webp, esc, matchEol } from './lib/youtube.mjs';
+import { readFeed, webp, pruneThumbs, esc, matchEol } from './lib/youtube.mjs';
 
 strictOptions(['offline', 'check']);
 const CHECK = process.argv.includes('--check');
@@ -30,6 +30,20 @@ const DB = join(DIR, 'shorts.json');
 const PAGE = join(SITE, 'index.html');
 
 mkdirSync(DIR, { recursive: true });
+
+// A Short's thumbnail is a 16:9 (or 4:3) frame with the vertical picture in the middle; keep that
+// middle, at the aspect the card shows. Largest first; the crops sit just inside the picture.
+const CROPS = [
+  ['maxresdefault', 'crop=392:696:444:12'], // 1280x720
+  ['sddefault', 'crop=260:462:190:9'],      // 640x480
+  ['hqdefault', 'crop=190:338:145:11'],     // 480x360
+];
+async function thumb(id, out) {
+  for (const [i, [name, vf]] of CROPS.entries()) {
+    if (await webp(`https://i.ytimg.com/vi/${id}/${name}.jpg`, out, vf)) return i ? 'low' : 'full';
+  }
+  return null;
+}
 const db = existsSync(DB) ? JSON.parse(readFileSync(DB, 'utf8')) : { shorts: [] };
 
 if (!OFFLINE) {
@@ -38,16 +52,21 @@ if (!OFFLINE) {
   if (!entries.length && db.shorts.length) throw new Error('the feed listed no Shorts; refusing to empty the page');
   const next = [];
   for (const f of entries) {
-    // A Short's maxres thumbnail is a 16:9 frame with the vertical picture in the middle third.
-    // Keep that middle, at the aspect the card shows.
+    const known = db.shorts.find((k) => k.id === f.id);
     const out = join(DIR, `${f.id}.webp`);
-    if (!existsSync(out)) {
-      const ok = await webp(`https://i.ytimg.com/vi/${f.id}/maxresdefault.jpg`, out, 'crop=392:696:444:12');
-      if (!ok) throw new Error(`no thumbnail for ${f.id}`);
+    let low = !!known?.lowres;
+    // A new Short often has no maxres picture yet. Use a smaller one for now (marked lowres) and
+    // try maxres again on the next runs; a Short with no picture at all is left off until it has one,
+    // so one bad thumbnail never stops the rest of the lists updating.
+    if (!existsSync(out) || low) {
+      const got = await thumb(f.id, out);
+      if (got) low = got === 'low';
+      else if (!existsSync(out)) { console.warn(`sync-shorts: no thumbnail for ${f.id} yet; leaving it off the page`); continue; }
     }
-    next.push({ id: f.id, title: f.title, published: f.published });
+    next.push({ id: f.id, title: f.title, published: f.published, ...(low ? { lowres: true } : {}) });
   }
   db.shorts = next;
+  pruneThumbs(DIR, next.map((s) => s.id));
   writeFileSync(DB, JSON.stringify(db, null, 2) + '\n');
 }
 

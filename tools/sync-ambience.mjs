@@ -18,7 +18,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { strictOptions } from './lib/args.mjs';
-import { readFeed, webp, lengthSeconds, esc, clock, matchEol } from './lib/youtube.mjs';
+import { readFeed, webp, lengthSeconds, isGone, pruneThumbs, esc, clock, matchEol } from './lib/youtube.mjs';
 
 strictOptions(['offline', 'check']);
 const CHECK = process.argv.includes('--check');
@@ -61,8 +61,12 @@ if (!OFFLINE) {
     }
     db.films = db.films.filter((k) => k.id !== f.id).concat(film);
   }
-  // a film that left the public feed (made private, deleted) leaves the site too
-  db.films = db.films.filter((k) => entries.some((f) => f.id === k.id));
+  // The feed only reaches back ~15 videos, so a film missing from it is not necessarily gone. Ask
+  // YouTube about each one before it leaves the site (made private or deleted); otherwise it stays.
+  for (const k of db.films.filter((k) => !entries.some((f) => f.id === k.id))) {
+    if (await isGone(k.id)) { console.log(`sync-ambience: ${k.id} is no longer public; removing it`); db.films = db.films.filter((x) => x.id !== k.id); }
+  }
+  pruneThumbs(DIR, [...db.films.map((f) => f.id), 'coming-reef']); // coming-reef-*.webp is the no-film placeholder
   db.films.sort((a, b) => (a.published < b.published ? 1 : a.published > b.published ? -1 : 0));
   writeFileSync(DB, JSON.stringify(db, null, 2) + '\n');
 }
@@ -127,7 +131,7 @@ const ld = db.films.length ? `<script type="application/ld+json">
         embedUrl: `https://www.youtube-nocookie.com/embed/${f.id}`,
       },
     })),
-  })}
+  }).replace(/</g, '\\u003c')}
   </script>` : '';
 
 const before = readFileSync(PAGE, 'utf8');

@@ -2,7 +2,8 @@ name: Refresh videos
 
 # Reads the two channels' public feeds every day. When a film (Greenfield Ambience) or a Short
 # (Greenfield Studio) has appeared, gone private or been renamed, it regenerates the lists on
-# /ambience/ and the home page, commits ONLY those generated files to main, and publishes the site.
+# /ambience/ and the home page, commits ONLY those generated files to main, and publishes the site
+# (also when the live lists are behind main, so a failed deploy is retried the next day).
 # Only public videos are in the feeds (no API key). See README.md, "Films and Shorts update themselves".
 
 on:
@@ -71,14 +72,24 @@ jobs:
           git push origin HEAD:main
 
       - name: Fetch the site as it is live (the game build and press downloads are not on main)
-        if: steps.diff.outputs.changed == 'true' || inputs.redeploy
         uses: actions/checkout@v4
         with:
           ref: gh-pages
           path: .live
 
+      # Deploy when the published lists differ from main's, not only when this run changed them: a
+      # deploy that failed after its commit reached main is retried by the next run.
+      - name: Is the live site behind main?
+        id: live
+        run: |
+          stale=false
+          for f in assets/media/ambience/films/films.json assets/media/shorts/shorts.json; do
+            cmp -s "$f" ".live/$f" || { echo "$f differs from the live site"; stale=true; }
+          done
+          echo "stale=$stale" >> "$GITHUB_OUTPUT"
+
       - name: Publish the site
-        if: steps.diff.outputs.changed == 'true' || inputs.redeploy
+        if: steps.live.outputs.stale == 'true' || inputs.redeploy
         env:
           DEPLOY_REMOTE: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
           GIT_AUTHOR_NAME: github-actions[bot]
