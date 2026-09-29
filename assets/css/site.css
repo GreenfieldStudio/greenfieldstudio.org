@@ -654,6 +654,15 @@ section[id] { scroll-margin-top: 92px; }
 .film h3 { margin: 14px 0 4px; font-size: 18px; font-weight: 500; line-height: 1.35; }
 .film:hover h3 { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
 
+/* the studio channel's Shorts: a row of portrait cards */
+.shorts { list-style: none; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 28px 16px; margin-top: 32px; }
+@media (max-width: 860px) { .shorts { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .shorts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.film--short .film-media { aspect-ratio: 9 / 16; }
+.film--short .film-play .play-disc { width: 44px; height: 44px; }
+.film--short .film-play .play-disc svg { width: 16px; height: 16px; }
+.film--short h3 { margin-top: 10px; font-size: 15px; font-weight: 400; }
+
 .player {
   width: min(96vw, 1280px);
   max-width: none;
@@ -665,6 +674,9 @@ section[id] { scroll-margin-top: 92px; }
 .player::backdrop { background: rgba(3, 7, 5, 0.88); }
 .player-frame { aspect-ratio: 16 / 9; background: #000; }
 .player-frame iframe { display: block; width: 100%; height: 100%; border: 0; }
+/* a Short plays in a portrait frame, sized so the frame and its bar fit the viewport */
+.player[data-shape="short"] { width: min(96vw, 420px, calc((100vh - 110px) * 0.5625)); }
+.player[data-shape="short"] .player-frame { aspect-ratio: 9 / 16; }
 .player-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding: 10px 12px; background: var(--field-deep); border-top: 1px solid var(--hair); }
 .player-bar p { margin: 0; font-size: 15px; color: var(--cream-2); }
 

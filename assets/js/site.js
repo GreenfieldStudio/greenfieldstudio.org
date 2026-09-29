@@ -168,8 +168,8 @@
     });
   });
 
-  // ── films: a click opens YouTube's privacy-enhanced player in a dialog ──────────
-  // Nothing is requested from YouTube until someone presses a film; closing the dialog
+  // ── films and Shorts: a click opens YouTube's privacy-enhanced player in a dialog ──
+  // Nothing is requested from YouTube until someone presses one; closing the dialog
   // removes the player. Without JS (or <dialog>), each card is a plain link to YouTube.
   const films = document.querySelectorAll('a[data-film]');
   const dlg = document.querySelector('[data-player]');
@@ -178,7 +178,7 @@
     const title = dlg.querySelector('[data-player-title]');
     const watch = dlg.querySelector('[data-player-watch]');
     let opener = null;
-    dlg.addEventListener('close', () => { slot.textContent = ''; if (opener) opener.focus(); });
+    dlg.addEventListener('close', () => { slot.textContent = ''; delete dlg.dataset.shape; if (opener) opener.focus(); });
     dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); }); // the backdrop
     dlg.querySelector('[data-player-close]').addEventListener('click', () => dlg.close());
     films.forEach((a) => a.addEventListener('click', (e) => {
@@ -189,13 +189,14 @@
       opener = a;
       const f = document.createElement('iframe');
       f.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1`;
-      f.title = a.dataset.filmTitle || 'Greenfield Ambience film';
+      f.title = a.dataset.filmTitle || 'Greenfield Studio video';
       f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
       f.setAttribute('allowfullscreen', '');
       f.referrerPolicy = 'strict-origin-when-cross-origin'; // YouTube refuses embeds with no referrer
       slot.appendChild(f);
       title.textContent = f.title;
       watch.href = a.href;
+      if (a.dataset.filmShape === 'short') dlg.dataset.shape = 'short'; // a portrait frame
       dlg.showModal();
     }));
   }
