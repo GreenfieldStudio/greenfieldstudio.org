@@ -120,9 +120,12 @@ Remove any other `A @` record (an old Vercel one pointed at `216.198.79.1`) and 
 `www` CNAME. Check the IPs against GitHub's current docs ("Managing a custom domain for your
 GitHub Pages site") before changing anything. Once DNS resolves, tick **Enforce HTTPS**.
 
-**Email:** `hello@greenfieldstudio.org` is a Namecheap email-forwarding alias (*Domain List → Manage →
-Redirect Email*) to the studio inbox. It relies on Namecheap's `eforward` MX records and their SPF
-`TXT`, so leave those alone when editing DNS.
+**Email:** the public contact address is `greenfieldstudiodev@gmail.com` (decided 2026-09-29; it
+forwards to the studio inbox). It is on every page footer (`tools/sync-chrome.mjs`), the home page,
+the press kit (`tools/make-media.mjs` writes `ABOUT.txt`) and the privacy page. The older
+`hello@greenfieldstudio.org` is still a Namecheap email-forwarding alias (*Domain List → Manage →
+Redirect Email*) but is no longer published here; it relies on Namecheap's `eforward` MX records and
+their SPF `TXT`, so leave those alone when editing DNS.
 
 ## Playing somewhere else instead
 
