@@ -6,5 +6,7 @@
 /press/*.zip
 # Tool scratch:
 /.deploy/
+# CI: a checkout of the live gh-pages branch that deploy.mjs --base reads (see .github/workflows/videos.yml)
+/.live/
 /.audit/
 node_modules/

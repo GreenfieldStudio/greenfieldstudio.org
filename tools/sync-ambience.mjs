@@ -4,89 +4,85 @@
  *
  *   node tools/sync-ambience.mjs            # read the channel's public feed, then rewrite the page
  *   node tools/sync-ambience.mjs --offline  # rewrite the page from assets/media/ambience/films/films.json only
+ *   node tools/sync-ambience.mjs --check    # offline; exit 1 if the page differs from films.json (the audit runs this)
  *
- * Reads the channel's public Atom feed (https://www.youtube.com/feeds/videos.xml, no API key; it
- * lists public videos only, so an unlisted or processing upload stays off the site by itself),
- * self-hosts each film's thumbnail as WebP (so the page requests nothing from YouTube until a
- * film is played), reads its length from the watch page, and records all of it in films.json.
- * Then it rewrites the block between `<!-- films:start -->` / `<!-- films:end -->` in
- * ambience/index.html and the VideoObject data between `<!-- films-ld:start -->` / `-end -->`.
- * Run it after a film goes public, then deploy.
+ * Reads the channel's public Atom feed (no API key; it lists public videos only, so an unlisted or
+ * processing upload stays off the site by itself), self-hosts each film's thumbnail as WebP (so the
+ * page requests nothing from YouTube until a film is played), reads its length from the watch page,
+ * and records all of it in films.json. Then it rewrites the block between `<!-- films:start -->` /
+ * `<!-- films:end -->` in ambience/index.html and the VideoObject data between
+ * `<!-- films-ld:start -->` / `-end -->`. The daily GitHub Action (.github/workflows/videos.yml)
+ * runs this, so a film shows up on the site by itself; run it by hand to see the result sooner.
  */
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { tmpdir } from 'node:os';
 import { strictOptions } from './lib/args.mjs';
+import { readFeed, webp, lengthSeconds, isGone, pruneThumbs, esc, clock, matchEol } from './lib/youtube.mjs';
 
-strictOptions(['offline']);
-const OFFLINE = process.argv.includes('--offline');
+strictOptions(['offline', 'check']);
+const CHECK = process.argv.includes('--check');
+const OFFLINE = CHECK || process.argv.includes('--offline');
 const SITE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CHANNEL_ID = 'UCelrQ1cVscJobF_mzsRv8_w';
 const CHANNEL = 'https://www.youtube.com/@Greenfield.Ambience';
 const DIR = join(SITE, 'assets', 'media', 'ambience', 'films');
 const DB = join(DIR, 'films.json');
 const PAGE = join(SITE, 'ambience', 'index.html');
-const UA = { 'user-agent': 'Mozilla/5.0 (greenfieldstudio.org film sync)', 'accept-language': 'en' };
 
 mkdirSync(DIR, { recursive: true });
 const db = existsSync(DB) ? JSON.parse(readFileSync(DB, 'utf8')) : { films: [] };
-const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-const unxml = (s) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
-
-async function webp(url, out, width) {
-  const tmp = join(tmpdir(), `gs-thumb-${process.pid}.jpg`);
-  const r = await fetch(url, { headers: UA });
-  if (!r.ok) return false;
-  writeFileSync(tmp, Buffer.from(await r.arrayBuffer()));
-  const x = spawnSync('ffmpeg', ['-v', 'error', '-y', '-i', tmp, '-vf', `scale=${width}:-2:flags=lanczos`, '-c:v', 'libwebp', '-quality', '82', out]);
-  rmSync(tmp, { force: true });
-  return x.status === 0;
-}
+const scale = (w) => `scale=${w}:-2:flags=lanczos`;
 
 if (!OFFLINE) {
-  const res = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${CHANNEL_ID}`, { headers: UA });
-  if (!res.ok) throw new Error(`feed: HTTP ${res.status}`);
-  const xml = await res.text();
-  const entries = [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)].map(([, e]) => ({
-    id: (/<yt:videoId>([^<]+)<\/yt:videoId>/.exec(e) || [])[1],
-    title: unxml((/<title>([^<]*)<\/title>/.exec(e) || [])[1] || ''),
-    published: ((/<published>([^<]+)<\/published>/.exec(e) || [])[1] || '').slice(0, 10),
-    description: unxml((/<media:description>([\s\S]*?)<\/media:description>/.exec(e) || [])[1] || ''),
-  })).filter((f) => /^[A-Za-z0-9_-]{11}$/.test(f.id || ''));
+  // A Short on this channel is not a film: this list is the long-form ones.
+  const entries = (await readFeed(CHANNEL_ID)).filter((f) => !f.short);
+  // An empty feed is far more likely a bad response than every film having been removed.
+  if (!entries.length && db.films.length) throw new Error('the feed listed no films; refusing to empty the page');
 
   for (const f of entries) {
     const known = db.films.find((k) => k.id === f.id) || {};
     const film = { ...known, ...f };
+    delete film.short;
     // thumbnails: the largest YouTube has, self-hosted in two sizes
     if (!existsSync(join(DIR, `${f.id}-1280.webp`))) {
       let ok = false;
       for (const name of ['maxresdefault', 'sddefault', 'hqdefault']) {
         const src = `https://i.ytimg.com/vi/${f.id}/${name}.jpg`;
-        if (await webp(src, join(DIR, `${f.id}-1280.webp`), 1280) && await webp(src, join(DIR, `${f.id}-640.webp`), 640)) { ok = true; break; }
+        if (await webp(src, join(DIR, `${f.id}-1280.webp`), scale(1280)) && await webp(src, join(DIR, `${f.id}-640.webp`), scale(640))) { ok = true; break; }
       }
       if (!ok) throw new Error(`no thumbnail for ${f.id}`);
     }
-    // length: not in the feed; the watch page carries it
+    // length: not in the feed. If the watch page can't be read, the card goes up without one and
+    // the next run tries again.
     if (!film.seconds) {
-      const page = await (await fetch(`https://www.youtube.com/watch?v=${f.id}`, { headers: UA })).text();
-      const m = /"lengthSeconds":"(\d+)"/.exec(page);
-      if (m) film.seconds = Number(m[1]);
+      const s = await lengthSeconds(f.id);
+      if (s) film.seconds = s;
     }
     db.films = db.films.filter((k) => k.id !== f.id).concat(film);
   }
-  // a film that left the public feed (made private, deleted) leaves the site too
-  db.films = db.films.filter((k) => entries.some((f) => f.id === k.id));
-  db.films.sort((a, b) => (a.published < b.published ? 1 : -1));
+  // The feed only reaches back ~15 videos, so a film missing from it is not necessarily gone. Ask
+  // YouTube about each one before it leaves the site (made private or deleted); otherwise it stays.
+  for (const k of db.films.filter((k) => !entries.some((f) => f.id === k.id))) {
+    if (await isGone(k.id)) { console.log(`sync-ambience: ${k.id} is no longer public; removing it`); db.films = db.films.filter((x) => x.id !== k.id); }
+  }
+  pruneThumbs(DIR, [...db.films.map((f) => f.id), 'coming-reef']); // coming-reef-*.webp is the no-film placeholder
+  db.films.sort((a, b) => (a.published < b.published ? 1 : a.published > b.published ? -1 : 0));
   writeFileSync(DB, JSON.stringify(db, null, 2) + '\n');
 }
 
-const clock = (s) => {
-  if (!s) return '';
-  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
-  return h ? `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}` : `${m}:${String(sec).padStart(2, '0')}`;
+// "Coral Reef Aquarium 4K 60fps | 1 Hour Relaxing…" → "Coral Reef Aquarium"; a hand-set displayTitle wins.
+const displayTitle = (f) => f.displayTitle || f.title.split(/\s+[|·—–]\s+/)[0].replace(/\s+4K(\s+60\s*fps)?$/i, '').trim() || f.title;
+// Only what the film's own description states: "4K" and the frame rate.
+const specOf = (f) => {
+  const d = f.description || '';
+  const out = [];
+  if (/3840\s*[×x]\s*2160|\b4K\b/i.test(d + ' ' + f.title)) out.push('4K');
+  const fps = /(\d{2,3})\s*(?:fps|frames per second)/i.exec(d + ' ' + f.title);
+  if (fps) out.push(`${fps[1]} fps`);
+  return out;
 };
+const length = (s) => (s < 5400 ? `${Math.round(s / 60)} min` : `${String(+(s / 3600).toFixed(1))} h`);
 const iso = (s) => `PT${Math.floor(s / 3600)}H${Math.floor((s % 3600) / 60)}M${s % 60}S`;
 const PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4.5 2.6v10.8l8.8-5.4z" fill="currentColor"/></svg>';
 
@@ -97,8 +93,8 @@ if (db.films.length) {
               <img src="../assets/media/ambience/films/${f.id}-640.webp" srcset="../assets/media/ambience/films/${f.id}-640.webp 640w, ../assets/media/ambience/films/${f.id}-1280.webp 1280w" sizes="(max-width: 520px) 100vw, (max-width: 860px) 50vw, 380px" width="1280" height="720" loading="lazy" decoding="async" alt="">
               <span class="film-play" aria-hidden="true"><span class="play-disc">${PLAY}</span></span>${f.seconds ? `\n              <span class="film-len">${clock(f.seconds)}</span>` : ''}
             </span>
-            <h3>${esc(f.displayTitle || f.title)}</h3>
-            <span class="anno">${f.seconds ? `${Math.round(f.seconds / 60)} min · ` : ''}4K · 60 fps · on YouTube</span>
+            <h3>${esc(displayTitle(f))}</h3>
+            <span class="anno">${[f.seconds ? length(f.seconds) : '', ...specOf(f), 'on YouTube'].filter(Boolean).join(' · ')}</span>
           </a>`).join('\n')}
         </div>`;
 } else {
@@ -135,10 +131,11 @@ const ld = db.films.length ? `<script type="application/ld+json">
         embedUrl: `https://www.youtube-nocookie.com/embed/${f.id}`,
       },
     })),
-  })}
+  }).replace(/</g, '\\u003c')}
   </script>` : '';
 
-let html = readFileSync(PAGE, 'utf8');
+const before = readFileSync(PAGE, 'utf8');
+let html = before;
 const put = (name, body) => {
   const re = new RegExp(`(<!-- ${name}:start -->)[\\s\\S]*?(\\s*<!-- ${name}:end -->)`);
   if (!re.test(html)) throw new Error(`ambience/index.html has no ${name} markers`);
@@ -146,5 +143,13 @@ const put = (name, body) => {
 };
 put('films', block);
 put('films-ld', ld);
-writeFileSync(PAGE, html);
-console.log(`sync-ambience: ${db.films.length} public film(s)${db.films.length ? ': ' + db.films.map((f) => f.title).join(' | ') : ' (showing the coming-soon card)'}`);
+if (CHECK) {
+  // compare with line endings ignored: a Windows checkout may hold CRLF
+  if (html.replace(/\r/g, '') !== before.replace(/\r/g, '')) {
+    console.error('sync-ambience: ambience/index.html differs from films.json. Run: node tools/sync-ambience.mjs --offline');
+    process.exit(1);
+  }
+  process.exit(0);
+}
+writeFileSync(PAGE, matchEol(html, before));
+console.log(`sync-ambience: ${db.films.length} public film(s)${db.films.length ? ': ' + db.films.map((f) => displayTitle(f)).join(' | ') : ' (showing the coming-soon card)'}`);

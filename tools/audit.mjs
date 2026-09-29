@@ -15,7 +15,7 @@
  * palette's text pairs (WCAG AA).
  */
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadPlaywright } from './lib/playwright.mjs';
@@ -74,6 +74,9 @@ const counterBlocked = new Set(); // pages where this machine's network refused 
 // Every page's menu and footer come from one template (tools/sync-chrome.mjs); a hand edit drifts.
 const chromeFailure = LIVE ? null
   : (() => { const r = spawnSync(process.execPath, [join(SITE, 'tools', 'sync-chrome.mjs'), '--check'], { encoding: 'utf8' }); return r.status ? (r.stderr || r.stdout).trim() : null; })();
+// The films and Shorts lists are generated from assets/media/**/*.json (tools/sync-ambience.mjs, tools/sync-shorts.mjs).
+const listFailures = LIVE ? []
+  : ['sync-ambience', 'sync-shorts'].flatMap((t) => { const r = spawnSync(process.execPath, [join(SITE, 'tools', `${t}.mjs`), '--check'], { encoding: 'utf8' }); return r.status ? [(r.stderr || r.stdout).trim()] : []; });
 // 404.html uses root-absolute paths (Pages serves it at any depth), so it is only meaningful
 // at a domain root — not on a github.io/<repo>/ staging URL.
 if (new URL(BASE).pathname !== '/') {
@@ -86,6 +89,7 @@ const browser = await chromium.launch();
 const failures = [];
 const fail = (where, msg) => failures.push(`${where}: ${msg}`);
 if (chromeFailure) fail('menus/footers', chromeFailure.replace(/\n/g, '; '));
+for (const m of listFailures) fail('films/shorts', m.replace(/\n/g, '; '));
 const rows = [];
 const checked = new Map(); // url -> status
 
@@ -225,12 +229,33 @@ if (!LIVE) {
   const page = await ctx.newPage();
   await page.route('https://www.youtube-nocookie.com/**', (route) => route.abort());
   await page.goto(BASE + 'ambience/', { waitUntil: 'load' });
-  await page.getByRole('link', { name: 'Watch the first film' }).click();
-  const player = page.locator('[data-player]');
-  if (!await player.evaluate((dialog) => dialog.open)) fail('ambience', 'hero film button did not open the player');
-  if (!await player.locator('iframe[src*="liWuRuThk1k"]').count()) fail('ambience', 'player did not load the first film');
-  await page.locator('[data-player-close]').click();
-  if (!await player.locator('iframe').waitFor({ state: 'detached', timeout: 2000 }).then(() => true).catch(() => false)) fail('ambience', 'closing the player did not remove the video');
+  // the films are listed newest first from films.json; the first card must open that film
+  const films = JSON.parse(readFileSync(join(SITE, 'assets', 'media', 'ambience', 'films', 'films.json'), 'utf8')).films;
+  if (films.length) {
+    if (await page.locator('#films a[data-film]').count() !== films.length) fail('ambience', 'the page does not list every film in films.json');
+    await page.locator('#films a[data-film]').first().click();
+    const player = page.locator('[data-player]');
+    if (!await player.evaluate((dialog) => dialog.open)) fail('ambience', 'a film card did not open the player');
+    if (!await player.locator(`iframe[src*="${films[0].id}"]`).count()) fail('ambience', 'player did not load the newest film');
+    await page.locator('[data-player-close]').click();
+    if (!await player.locator('iframe').waitFor({ state: 'detached', timeout: 2000 }).then(() => true).catch(() => false)) fail('ambience', 'closing the player did not remove the video');
+  }
+  // the home page's Shorts: listed from shorts.json, played in a portrait dialog, nothing from YouTube before a click
+  const shorts = JSON.parse(readFileSync(join(SITE, 'assets', 'media', 'shorts', 'shorts.json'), 'utf8')).shorts;
+  const yt = [];
+  page.on('request', (r) => { if (/youtube|ytimg|googlevideo/.test(new URL(r.url()).hostname)) yt.push(r.url()); });
+  await page.goto(BASE, { waitUntil: 'load' });
+  await page.waitForTimeout(500);
+  if (await page.locator('#shorts a[data-film]').count() !== shorts.length) fail('home', 'the Shorts section does not list every Short in shorts.json');
+  if (yt.length) fail('home', `the page asked YouTube for something before a click: ${yt[0]}`);
+  if (shorts.length) {
+    await page.locator('#shorts a[data-film]').first().click();
+    const dlg = page.locator('[data-player]');
+    if (!await dlg.evaluate((d) => d.open && d.dataset.shape === 'short')) fail('home', 'a Short did not open in the portrait player');
+    if (!await dlg.locator(`iframe[src*="${shorts[0].id}"]`).count()) fail('home', 'player did not load the newest Short');
+    await page.keyboard.press('Escape');
+    if (!await page.waitForFunction(() => !document.querySelector('[data-player]').dataset.shape, null, { timeout: 2000 }).then(() => true).catch(() => false)) fail('home', 'closing a Short left the player in its portrait shape');
+  }
   await page.goto(BASE + 'journal/coral-reef/', { waitUntil: 'load' });
   const reefPlayer = page.locator('[data-player]');
   if (await reefPlayer.locator('iframe').count()) fail('reef article', 'film loaded before a visitor clicked Play');
