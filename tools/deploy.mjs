@@ -4,11 +4,17 @@
  *
  *   node tools/deploy.mjs            # dry run: assemble .deploy/ and report what would ship
  *   node tools/deploy.mjs --push     # publish: one orphan commit, force-pushed to origin/gh-pages
+ *   node tools/deploy.mjs --push --base <dir>   # same, in CI: borrow the game build and press downloads from <dir>,
+ *                                    # a checkout of the branch that is already live (see below)
  *
  * `main` holds the SOURCE. The game build (play/) and the press downloads (press/files/,
  * the zip) are generated and never committed there. gh-pages receives exactly one commit
  * per deploy, so the public repo never accumulates a history of 35 MB game builds.
  * Pages must be set to "Deploy from a branch: gh-pages / (root)".
+ *
+ * CI (.github/workflows/videos.yml) has only `main`, so it has neither generated input. `--base <dir>`
+ * takes them from a checkout of the live gh-pages branch instead, and DEPLOY_REMOTE (a push URL that
+ * carries the workflow's token) replaces the `origin` URL, which a fresh .deploy repo can't use.
  */
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -17,7 +23,7 @@ import { fileURLToPath } from 'node:url';
 import { CLOUDFLARE_BEACON_TOKEN as TOKEN, BEACON_SRC, PRIVACY_MARKER, beaconTag, countsPage, tokenLooksValid } from './analytics.mjs';
 import { strictOptions } from './lib/args.mjs';
 
-strictOptions(['push', 'staging']);
+strictOptions(['push', 'staging', 'base']);
 
 const SITE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(SITE, '.deploy');
@@ -26,9 +32,33 @@ const PUSH = process.argv.includes('--push');
    redirects to it — so while DNS still points elsewhere, a staging deploy is the only way to
    check the site on greenfieldstudio.github.io/<repo>/ first. */
 const STAGING = process.argv.includes('--staging');
-const EXCLUDE = new Set(['.git', '.deploy', '.audit', 'tools', 'node_modules', 'README.md', '.gitignore', 'package.json']);
+const baseAt = process.argv.indexOf('--base');
+const BASE = baseAt > -1 ? resolve(process.argv[baseAt + 1] || '') : null;
+if (baseAt > -1 && !process.argv[baseAt + 1]) { console.error('deploy: --base needs a directory.'); process.exit(2); }
+const EXCLUDE = new Set(['.git', '.github', '.deploy', '.live', '.audit', 'tools', 'node_modules', 'README.md', '.gitignore', 'package.json']);
 const git = (args, cwd = SITE) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const die = (m) => { console.error(`deploy: ${m}`); process.exit(1); };
+
+// ── --base: borrow the generated inputs from what is already live ───────────────
+if (BASE) {
+  if (!existsSync(join(BASE, 'index.html'))) die(`--base ${BASE} is not a checkout of the published site.`);
+  for (const p of ['play', 'press/files', 'press/greenfield-studio-presskit.zip']) {
+    if (existsSync(join(SITE, p))) continue; // a local build wins
+    if (!existsSync(join(BASE, p))) die(`--base has no ${p}.`);
+    mkdirSync(dirname(join(SITE, p)), { recursive: true });
+    cpSync(join(BASE, p), join(SITE, p), { recursive: true });
+    console.log(`deploy: took ${p} from ${BASE}`);
+  }
+  // The published play/index.html already carries the visitor counter. It is added again below, so
+  // take exactly what this script added out of the copy (and refuse to go on if anything is left).
+  const game = join(SITE, 'play', 'index.html');
+  if (TOKEN && existsSync(game)) {
+    const html = readFileSync(game, 'utf8');
+    const stripped = html.replace(beaconTag(TOKEN) + '\n', '');
+    if (stripped.includes(BEACON_SRC)) die('the published play/index.html carries a counter this script did not add; refusing to count it twice.');
+    if (stripped !== html) writeFileSync(game, stripped);
+  }
+}
 
 // ── preconditions ───────────────────────────────────────────────────────────────
 for (const need of ['index.html', '404.html', 'CNAME', '.nojekyll', 'play/index.html', 'play/BUILD.txt', 'press/greenfield-studio-presskit.zip']) {
@@ -97,13 +127,13 @@ if (!PUSH) {
 }
 
 // ── publish ─────────────────────────────────────────────────────────────────────
-let remote;
-try { remote = git(['remote', 'get-url', 'origin']); } catch (_) { die('no `origin` remote on the site repo. Add one: git remote add origin <url>'); }
+let remote = process.env.DEPLOY_REMOTE || '';
+if (!remote) { try { remote = git(['remote', 'get-url', 'origin']); } catch (_) { die('no `origin` remote on the site repo. Add one: git remote add origin <url>'); } }
 if (dirty) console.warn('deploy: note — publishing with uncommitted changes in the source tree.');
 git(['init', '-q', '-b', 'gh-pages'], OUT);
 git(['add', '-A'], OUT);
 git(['commit', '-q', '-m', `Deploy site ${src} · game ${game.slice(0, 9)}\n\nPublished by tools/deploy.mjs. Source: main@${src}. Game build: ${game}.`], OUT);
-console.log(`deploy: pushing to ${remote} (gh-pages, forced)…`);
+console.log(`deploy: pushing to ${remote.replace(/\/\/[^@/]*@/, '//***@')} (gh-pages, forced)…`);
 execFileSync('git', ['push', '--force', remote, 'gh-pages'], { cwd: OUT, stdio: 'inherit' });
 rmSync(join(OUT, '.git'), { recursive: true, force: true });
 console.log('deploy: done. GitHub Pages will publish in a minute or two.');
