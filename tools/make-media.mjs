@@ -186,7 +186,7 @@ Languages   English, German, Chinese, Portuguese (Brazil), French, Spanish
 Play        https://greenfieldstudio.org/play/
 Also on     https://greenfieldstudio.itch.io/minigolf-pro
 Trailer     https://greenfieldstudio.org/press/files/minigolf-pro-trailer-1080p.mp4
-Contact     hello@greenfieldstudio.org
+Contact     greenfieldstudiodev@gmail.com
 
 All assets in this archive are free to use in coverage, reviews, videos and streams
 of Minigolf Pro.
