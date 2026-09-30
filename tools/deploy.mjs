@@ -35,7 +35,7 @@ const STAGING = process.argv.includes('--staging');
 const baseAt = process.argv.indexOf('--base');
 const BASE = baseAt > -1 ? resolve(process.argv[baseAt + 1] || '') : null;
 if (baseAt > -1 && !process.argv[baseAt + 1]) { console.error('deploy: --base needs a directory.'); process.exit(2); }
-const EXCLUDE = new Set(['.git', '.github', '.deploy', '.live', '.audit', 'tools', 'node_modules', 'README.md', '.gitignore', 'package.json']);
+const EXCLUDE = new Set(['.git', '.github', '.deploy', '.live', '.audit', 'tools', 'node_modules', 'README.md', '.gitignore', 'package.json', 'CLAUDE.md', '.claude']);
 const git = (args, cwd = SITE) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const die = (m) => { console.error(`deploy: ${m}`); process.exit(1); };
 
