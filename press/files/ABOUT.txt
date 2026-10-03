@@ -1,0 +1,20 @@
+MINIGOLF PRO — press kit
+Greenfield Studio · https://greenfieldstudio.org/press/
+
+SHORT
+Free physics minigolf — 80 holes across 8 worlds, a full level editor, and online
+multiplayer. Plays right in your browser.
+
+FACTS
+Developer   Greenfield Studio (independent, one person)
+Platform    Web browser — desktop and mobile
+Price       Free
+Players     1–4 (online rooms of 2–4, local play, CPU opponents)
+Languages   English, German, Chinese, Portuguese (Brazil), French, Spanish
+Play        https://greenfieldstudio.org/play/
+Also on     https://greenfieldstudio.itch.io/minigolf-pro
+Trailer     https://greenfieldstudio.org/press/files/minigolf-pro-trailer-1080p.mp4
+Contact     hello@greenfieldstudio.org
+
+All assets in this archive are free to use in coverage, reviews, videos and streams
+of Minigolf Pro.

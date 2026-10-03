@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="swoosh" x1="0" y1="0.5" x2="1" y2="0.5">
+      <stop offset="0%" stop-color="#FFD93D"/>
+      <stop offset="100%" stop-color="#4ECDC4"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="192" height="192" rx="36" fill="#0a1628"/>
+  <!-- Swoosh arc -->
+  <path d="M 38 128 Q 68 45 143 75" fill="none" stroke="url(#swoosh)" stroke-width="11" stroke-linecap="round"/>
+  <!-- Golf ball -->
+  <circle cx="109" cy="98" r="38" fill="#fff"/>
+  <!-- Dimples -->
+  <circle cx="100" cy="92" r="4.5" fill="rgba(0,0,0,0.07)"/>
+  <circle cx="120" cy="88" r="4.5" fill="rgba(0,0,0,0.07)"/>
+  <circle cx="111" cy="109" r="4.5" fill="rgba(0,0,0,0.07)"/>
+  <!-- Highlight -->
+  <circle cx="97" cy="85" r="8" fill="rgba(255,255,255,0.5)"/>
+</svg>
