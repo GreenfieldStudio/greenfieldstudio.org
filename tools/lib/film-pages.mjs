@@ -13,6 +13,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { esc, clock as clock0, matchEol } from './youtube.mjs';
+import { signupSection } from '../signup.mjs';
 const clock = (s) => (s === 0 ? '0:00' : clock0(s));
 
 export const SITE_URL = 'https://greenfieldstudio.org';
@@ -260,7 +261,8 @@ ${facts.map(([k, v]) => `            <dt>${k}</dt><dd>${esc(v)}</dd>`).join('\n'
           </dl>${cfg.repeatCheck ? `\n          <span class="anno">repeat check passed ${esc(cfg.repeatCheck)}</span>` : ''}
         </aside>
       </div>
-    </section>${chaptersHtml}${moreHtml}
+    </section>${chaptersHtml}${moreHtml}${signupSection('../../') ? `
+    ${signupSection('../../')}` : ''}
   </main>
 
   <footer class="site-footer"></footer>

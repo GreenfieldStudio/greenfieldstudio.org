@@ -70,6 +70,13 @@ The generated pages carry the shared menu and footer through `sync-chrome` (whic
 the page's readout say `loops: none`. The page text itself mirrors the YouTube description, so a "No Loops"
 sentence there is only as true as the description.
 
+**The email box** (`tools/signup.mjs`) is OFF (`SIGNUP = null`): no box, no privacy paragraph. It is a plain
+`<form method="post">` to a provider's embed address, with no script from the provider and nothing requested
+until the button is pressed. The owner opens the account and sets `SIGNUP` (provider, form address, privacy
+URL); then `node tools/sync-ambience.mjs --offline` writes the box on `/ambience/` and every film page and the
+"Email list" paragraph on the privacy page. Deploy refuses to publish if the switch and the privacy page
+disagree, like the visitor counter. The box adds no third party at load, so the audit's allowlist is unchanged.
+
 **Shorts** on the home page ("on the channel") work the same way: `sync-shorts` reads the Greenfield
 Studio feed, keeps the six newest videos the feed links as `/shorts/` (long videos on that channel are
 ignored), self-hosts the picture from the middle third of each Short's thumbnail, and plays it in the

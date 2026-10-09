@@ -21,6 +21,7 @@ import { strictOptions } from './lib/args.mjs';
 import { readFeed, webp, lengthSeconds, isGone, pruneThumbs, esc, clock, matchEol } from './lib/youtube.mjs';
 import { displayTitle, ensureSlugs, secondsOf, syncFilmPages } from './lib/film-pages.mjs';
 import { spawnSync } from 'node:child_process';
+import { signupSection, privacyBlock } from './signup.mjs';
 
 strictOptions(['offline', 'check']);
 const CHECK = process.argv.includes('--check');
@@ -31,6 +32,7 @@ const CHANNEL = 'https://www.youtube.com/@Greenfield.Ambience';
 const DIR = join(SITE, 'assets', 'media', 'ambience', 'films');
 const DB = join(DIR, 'films.json');
 const PAGE = join(SITE, 'ambience', 'index.html');
+const PRIVACY = join(SITE, 'privacy', 'index.html');
 const CFG = join(SITE, 'tools', 'film-pages.json'); // hand-written: per-film facts a description can't prove (the repeat check)
 
 mkdirSync(DIR, { recursive: true });
@@ -147,9 +149,19 @@ const put = (name, body) => {
 };
 put('films', block);
 put('films-ld', ld);
+// the optional email box (tools/signup.mjs; empty while switched off) and its paragraph on the privacy page
+const putAt = (text, name, body, indent) => {
+  const re = new RegExp(`(<!-- ${name}:start -->)[\\s\\S]*?(<!-- ${name}:end -->)`);
+  if (!re.test(text)) throw new Error(`no ${name} markers`);
+  return text.replace(re, (_, a, b) => `${a}${body ? `\n${indent}${body}` : ''}\n${indent}${b}`);
+};
+html = putAt(html, 'signup', signupSection('../'), '    ');
+const privacyBefore = readFileSync(PRIVACY, 'utf8');
+const privacyAfter = putAt(privacyBefore.replace(/\r\n/g, '\n'), 'signup', privacyBlock(), '        ');
 if (CHECK) {
   // compare with line endings ignored: a Windows checkout may hold CRLF
   const problems = html.replace(/\r/g, '') !== before.replace(/\r/g, '') ? ['ambience/index.html differs from films.json'] : [];
+  if (privacyAfter.replace(/\r/g, '') !== privacyBefore.replace(/\r/g, '')) problems.push('privacy/index.html differs from tools/signup.mjs');
   problems.push(...syncFilmPages({ site: SITE, db, cfgFile: CFG, check: true }));
   if (problems.length) {
     console.error(`sync-ambience: ${problems.join('; ')}. Run: node tools/sync-ambience.mjs --offline`);
@@ -158,6 +170,7 @@ if (CHECK) {
   process.exit(0);
 }
 writeFileSync(PAGE, matchEol(html, before));
+writeFileSync(PRIVACY, matchEol(privacyAfter, privacyBefore));
 syncFilmPages({ site: SITE, db, cfgFile: CFG, check: false });
 // the film pages get the shared menu and footer from tools/sync-chrome.mjs
 const chrome = spawnSync(process.execPath, [join(SITE, 'tools', 'sync-chrome.mjs')], { encoding: 'utf8' });
