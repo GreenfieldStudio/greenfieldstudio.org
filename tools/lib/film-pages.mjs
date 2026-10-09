@@ -251,7 +251,7 @@ ${head({ title, desc, url, ogImage: `${SITE_URL}/assets/media/ambience/films/${f
         <p class="lede">${esc(d.summary)}</p>
         <p class="anno" style="margin:14px 0 28px">${esc(spec)}${spec ? ' · ' : ''}on YouTube</p>
 
-        <a class="embed" href="${watch}" data-embed="${f.id}" data-film-title="${esc(f.title)}" rel="noopener">
+        <a class="embed" href="${watch}" aria-label="Play the film: ${esc(name)}" data-embed="${f.id}" data-film-title="${esc(f.title)}" rel="noopener">
           <img src="${thumb}-1280.webp" srcset="${thumb}-640.webp 640w, ${thumb}-1280.webp 1280w" sizes="(max-width: 1180px) 100vw, 1180px" width="1280" height="720" fetchpriority="high" decoding="async" alt="Thumbnail of the film ${esc(name)}">
           <span class="film-play" aria-hidden="true"><span class="play-disc">${PLAY}</span></span>${s ? `\n          <span class="film-len">${clock(s)}</span>` : ''}
         </a>

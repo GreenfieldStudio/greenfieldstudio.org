@@ -183,6 +183,8 @@
       embed.replaceChildren(f);
       embed.classList.add('is-playing');
       embed.removeAttribute('href'); // the frame, not a link, from here on
+      embed.removeAttribute('aria-label');
+      f.focus(); // keyboard focus was on the link that just turned into the frame
     };
     const plain = (e) => e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey;
     embed.addEventListener('click', (e) => { if (plain(e) || embed.classList.contains('is-playing')) return; e.preventDefault(); play(0); });

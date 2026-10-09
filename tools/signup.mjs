@@ -34,7 +34,7 @@ export function signupSection(up) {
         <p class="fig"><span>email</span> <b>new films</b></p>
         <h2 class="h2" id="signup-title">Know when a new world is out</h2>
         <p class="lede">A short email about once a month: new films, and what is coming next.</p>
-        <form class="signup" action="${esc(SIGNUP.action)}" method="post" target="_blank">
+        <form class="signup" action="${esc(SIGNUP.action)}" method="post" target="_blank" rel="noopener">
           <label class="signup-label" for="signup-email">Email address</label>
           <div class="signup-row">
             <input id="signup-email" name="email" type="email" required autocomplete="email" inputmode="email" placeholder="you@example.com">${hidden}
