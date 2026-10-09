@@ -11,7 +11,7 @@
  * the page (404.html uses root-absolute ones, because Pages serves it at any depth) and
  * aria-current on the page's own section. Add a new page to PAGES.
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { strictOptions } from './lib/args.mjs';
@@ -33,6 +33,11 @@ const PAGES = [
   ['privacy/index.html', '../', 'privacy'],
   ['404.html', '/', 'none'],
 ];
+
+// One page per Ambience film, written by tools/sync-ambience.mjs (the folder name is the film's slug).
+for (const e of existsSync(join(SITE, 'ambience')) ? readdirSync(join(SITE, 'ambience'), { withFileTypes: true }) : []) {
+  if (e.isDirectory() && existsSync(join(SITE, 'ambience', e.name, 'index.html'))) PAGES.push([`ambience/${e.name}/index.html`, '../../', 'ambience']);
+}
 
 const YT_STUDIO = 'https://www.youtube.com/@Greenfield.Studio';
 const YT_AMBIENCE = 'https://www.youtube.com/@Greenfield.Ambience';

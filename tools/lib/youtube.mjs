@@ -54,7 +54,7 @@ export async function isGone(id) {
 /** Delete thumbnails in `dir` whose name starts with an id that is no longer listed (files that match no id are left alone). */
 export function pruneThumbs(dir, keepIds) {
   for (const f of readdirSync(dir)) {
-    const id = /^([A-Za-z0-9_-]{11})(?:-\d+)?\.webp$/.exec(f)?.[1];
+    const id = /^([A-Za-z0-9_-]{11})(?:-(?:\d+|og))?\.(?:webp|jpg)$/.exec(f)?.[1];
     if (id && !keepIds.includes(id)) rmSync(join(dir, f), { force: true });
   }
 }

@@ -168,6 +168,32 @@
     });
   });
 
+  // ── a film's own page: one click swaps the poster for YouTube's privacy-enhanced player, in place ──
+  // Nothing is requested from YouTube before the click. A chapter link starts the same player at
+  // that moment; without JS (or with a modified click) every one of these is a plain link to YouTube.
+  const embed = document.querySelector('a[data-embed]');
+  if (embed && /^[A-Za-z0-9_-]{11}$/.test(embed.dataset.embed)) {
+    const play = (start) => {
+      const f = document.createElement('iframe');
+      f.src = `https://www.youtube-nocookie.com/embed/${embed.dataset.embed}?autoplay=1&rel=0&playsinline=1${start ? `&start=${start}` : ''}`;
+      f.title = embed.dataset.filmTitle || 'Greenfield Ambience film';
+      f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+      f.setAttribute('allowfullscreen', '');
+      f.referrerPolicy = 'strict-origin-when-cross-origin'; // YouTube refuses embeds with no referrer
+      embed.replaceChildren(f);
+      embed.classList.add('is-playing');
+      embed.removeAttribute('href'); // the frame, not a link, from here on
+    };
+    const plain = (e) => e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey;
+    embed.addEventListener('click', (e) => { if (plain(e) || embed.classList.contains('is-playing')) return; e.preventDefault(); play(0); });
+    document.querySelectorAll('.chapters a[data-start]').forEach((a) => a.addEventListener('click', (e) => {
+      if (plain(e)) return;
+      e.preventDefault();
+      play(Number(a.dataset.start) || 0);
+      embed.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'center' });
+    }));
+  }
+
   // ── films and Shorts: a click opens YouTube's privacy-enhanced player in a dialog ──
   // Nothing is requested from YouTube until someone presses one; closing the dialog
   // removes the player. Without JS (or <dialog>), each card is a plain link to YouTube.

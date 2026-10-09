@@ -1,0 +1,4 @@
+{
+  "_readme": "Hand-written. Key = YouTube video id. \"repeatCheck\" = the date audio_repeat_check.py (and the picture check) passed on that film's FULL master, as YYYY-MM-DD. A film page shows 'loops: none' ONLY when this is set. Leave a film out until the check has passed.",
+  "_example": { "AAAAAAAAAAA": { "repeatCheck": "2026-10-01" } }
+}
