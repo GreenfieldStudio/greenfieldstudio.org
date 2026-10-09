@@ -77,6 +77,27 @@ export function softenLoops(text) {
   return t.replace(/\s+([.,])/g, '$1').trim();
 }
 
+/** The same rule for a YouTube title ("… (No Music, No Loops)" → "… (No Music)"); it is used as the name in
+ *  the structured data and the player's title, so it must not carry the claim either. */
+export function softenTitle(title) {
+  const t = title
+    .replace(/\s*\(\s*No Loops\s*\)/gi, '')
+    .replace(/,\s*No Loops\b/gi, '')
+    .replace(/\bNo Loops\s*,\s*/gi, '')
+    .replace(/\s*[|·—–-]\s*No Loops\b/gi, '')
+    .replace(/\bNo Loops\b\.?/gi, '')
+    .replace(/\(\s*\)/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  return LOOP_WORDS.test(t) ? softenLoops(t) || displayTitle({ title: t }) : t;
+}
+
+/** The first line of the description (the hub's structured data), with the same rule. */
+export const firstLine = (f, soften) => {
+  const l = (f.description || f.title).split('\n')[0];
+  return soften && LOOP_WORDS.test(l) ? softenLoops(l) || softenTitle(f.title) : l;
+};
+
 /**
  * A film is for relaxing, not a treatment: the site never promises a health effect, even when a YouTube
  * description does ("relaxation and stress relief" becomes "relaxation"; a list item that is only a
@@ -166,6 +187,7 @@ export function renderFilmPage(f, others, cfg = {}) {
   const s = secondsOf(f);
   const sp = specs(f);
   const d = parseDescription(f, !cfg.repeatCheck);
+  const fullTitle = cfg.repeatCheck ? f.title : softenTitle(f.title);
   const url = `${SITE_URL}/ambience/${f.slug}/`;
   const watch = `https://www.youtube.com/watch?v=${f.id}`;
   const title = `${name}${s ? ` · ${longLength(s)}${sp.res ? ' in 4K' : ''}` : sp.res ? ' · 4K' : ''} · Greenfield Ambience`;
@@ -189,7 +211,7 @@ export function renderFilmPage(f, others, cfg = {}) {
     '@graph': [
       {
         '@type': 'VideoObject',
-        name: f.title,
+        name: fullTitle,
         description: d.summary,
         thumbnailUrl: `${SITE_URL}/assets/media/ambience/films/${f.id}-1280.webp`,
         uploadDate: f.published,
@@ -262,7 +284,7 @@ ${head({ title, desc, url, ogImage: `${SITE_URL}/assets/media/ambience/films/${f
         <p class="lede">${esc(d.summary)}</p>
         <p class="anno" style="margin:14px 0 28px">${esc(spec)}${spec ? ' · ' : ''}on YouTube</p>
 
-        <a class="embed" href="${watch}" aria-label="Play the film: ${esc(name)}" data-embed="${f.id}" data-film-title="${esc(f.title)}" rel="noopener">
+        <a class="embed" href="${watch}" aria-label="Play the film: ${esc(name)}" data-embed="${f.id}" data-film-title="${esc(fullTitle)}" rel="noopener">
           <img src="${thumb}-1280.webp" srcset="${thumb}-640.webp 640w, ${thumb}-1280.webp 1280w" sizes="(max-width: 1180px) 100vw, 1180px" width="1280" height="720" fetchpriority="high" decoding="async" alt="Thumbnail of the film ${esc(name)}">
           <span class="film-play" aria-hidden="true"><span class="play-disc">${PLAY}</span></span>${s ? `\n          <span class="film-len">${clock(s)}</span>` : ''}
         </a>

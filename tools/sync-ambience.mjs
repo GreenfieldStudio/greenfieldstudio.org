@@ -19,7 +19,7 @@ import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { strictOptions } from './lib/args.mjs';
 import { readFeed, webp, lengthSeconds, isGone, pruneThumbs, esc, clock, matchEol } from './lib/youtube.mjs';
-import { displayTitle, ensureSlugs, secondsOf, syncFilmPages } from './lib/film-pages.mjs';
+import { displayTitle, ensureSlugs, secondsOf, syncFilmPages, softenTitle, firstLine } from './lib/film-pages.mjs';
 import { spawnSync } from 'node:child_process';
 import { signupSection, privacyBlock, privacyDate } from './signup.mjs';
 
@@ -120,6 +120,8 @@ if (db.films.length) {
         </div>`;
 }
 
+const cfg = existsSync(CFG) ? JSON.parse(readFileSync(CFG, 'utf8')) : {};
+const checked = (f) => !!cfg[f.id]?.repeatCheck;
 const ld = db.films.length ? `<script type="application/ld+json">
   ${JSON.stringify({
     '@context': 'https://schema.org',
@@ -129,8 +131,9 @@ const ld = db.films.length ? `<script type="application/ld+json">
       position: i + 1,
       item: {
         '@type': 'VideoObject',
-        name: f.title,
-        description: (f.description || f.title).split('\n')[0],
+        // no "no loops" in the structured data either, unless the film's repeat check is on record
+        name: checked(f) ? f.title : softenTitle(f.title),
+        description: firstLine(f, !checked(f)),
         thumbnailUrl: `https://greenfieldstudio.org/assets/media/ambience/films/${f.id}-1280.webp`,
         uploadDate: f.published,
         ...(secondsOf(f) ? { duration: iso(secondsOf(f)) } : {}),
