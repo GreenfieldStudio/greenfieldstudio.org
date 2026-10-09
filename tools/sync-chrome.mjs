@@ -55,12 +55,29 @@ function nav(p, section) {
       </nav>`;
 }
 
-function footer(p) {
+/* The watch strip: on every page except /ambience/ itself (which has its own subscribe band), so a
+   visitor never reaches the bottom of any page without a way to the channel. It is plain links:
+   nothing is requested from YouTube until someone follows one. */
+function watchStrip(p) {
+  return `<div class="watch-strip">
+        <div>
+          <p class="footer-h">greenfield ambience · on youtube</p>
+          <p class="watch-strip-text">Long, calm films of real-time 3D worlds, with no music. New ones come out on YouTube.</p>
+        </div>
+        <div class="btn-row">
+          <a class="btn" href="${YT_AMBIENCE}?sub_confirmation=1" rel="noopener">Subscribe on YouTube</a>
+          <a class="link-arrow" href="${p}ambience/#films">Watch the films</a>
+        </div>
+      </div>
+      `;
+}
+
+function footer(p, withStrip) {
   const root = p === '' ? './' : p;
   const ext = (href, icon, label) => `<li><a href="${href}" rel="noopener me">${ICON[icon]}${label}</a></li>`;
   return `<footer class="site-footer">
     <div class="wrap">
-      <div class="footer-grid">
+      ${withStrip ? watchStrip(p) : ''}<div class="footer-grid">
         <div class="footer-brand">
           <a class="brand" href="${root}" aria-label="Greenfield Studio, home">
             ${MARK}
@@ -113,7 +130,7 @@ for (const [file, prefix, section] of PAGES) {
   // write in the file's own line endings (a Windows checkout is CRLF), and compare without them
   const eol = /\r\n/.test(before) ? '\r\n' : '\n';
   const fit = (s) => s.replace(/\r?\n/g, eol);
-  const after = before.replace(navRe, fit(nav(prefix, section))).replace(footRe, fit(footer(prefix)));
+  const after = before.replace(navRe, fit(nav(prefix, section))).replace(footRe, fit(footer(prefix, file !== 'ambience/index.html' && file !== '404.html' && file !== 'privacy/index.html')));
   if (after.replace(/\r/g, '') === before.replace(/\r/g, '')) continue;
   stale++;
   if (CHECK) console.error(`out of date: ${file}`);

@@ -822,3 +822,8 @@ section[id] { scroll-margin-top: 92px; }
   body::before, body::after { display: none; }
   body { background: #fff; color: #000; }
 }
+
+/* ── watch strip: a way to the channel above every footer (written by tools/sync-chrome.mjs) ── */
+.watch-strip { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px 32px; padding-bottom: 36px; margin-bottom: 40px; border-bottom: 1px solid var(--hair); }
+.watch-strip .footer-h { margin-bottom: 8px; }
+.watch-strip-text { margin: 0; max-width: 34em; font-size: 18px; line-height: 1.5; color: var(--cream-2); }
