@@ -77,6 +77,17 @@ export function softenLoops(text) {
   return t.replace(/\s+([.,])/g, '$1').trim();
 }
 
+/**
+ * A film is for relaxing, not a treatment: the site never promises a health effect, even when a YouTube
+ * description does ("relaxation and stress relief" becomes "relaxation"; a list item that is only a
+ * health claim is dropped). Applied to every film, whatever its repeat-check record.
+ */
+const HEALTH_WORDS = /\b(?:stress|anxiety|insomnia|depress\w*|therap\w*|heal(?:s|ing)?|cures?|treatments?)\b/i;
+export function noHealth(item) {
+  const t = item.replace(/\s+(?:and|&)\s+(?:stress|anxiety)(?:\s+relief)?\b/i, '').replace(/\b(?:stress|anxiety)\s+relief\s+(?:and|&)\s+/i, '').trim();
+  return HEALTH_WORDS.test(t) ? '' : t;
+}
+
 /** Split the description into { summary, body: [{p}|{ul}], chapters: [{t, label}] }. `soften`: drop loop claims. */
 export function parseDescription(f, soften = false) {
   const text0 = (f.description || '').replace(/\r/g, '').trim();
@@ -94,7 +105,7 @@ export function parseDescription(f, soften = false) {
     const out = [];
     let list = null;
     for (const l of lines) {
-      if (/^[-•]\s+/.test(l)) { (list ||= []).push(l.replace(/^[-•]\s+/, '')); continue; }
+      if (/^[-•]\s+/.test(l)) { const item = noHealth(l.replace(/^[-•]\s+/, '')); if (item) (list ||= []).push(item); continue; }
       if (list) { out.push({ ul: list }); list = null; }
       out.push({ p: l });
     }
