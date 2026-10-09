@@ -219,13 +219,9 @@ export function renderFilmPage(f, others, cfg = {}) {
         url,
         embedUrl: `https://www.youtube-nocookie.com/embed/${f.id}`,
         publisher: { '@type': 'Organization', name: 'Greenfield Studio', url: `${SITE_URL}/` },
-        ...(d.chapters.length ? {
-          hasPart: d.chapters.map((c, i) => ({
-            '@type': 'Clip', name: c.label, startOffset: c.s,
-            ...(d.chapters[i + 1] ? { endOffset: d.chapters[i + 1].s } : s ? { endOffset: s } : {}),
-            url: `${watch}&t=${c.s}s`,
-          })),
-        } : {}),
+        // No Clip (chapter) markup: Google requires a clip's url to be this page's own path plus a time
+        // parameter, and this page cannot start the player from a URL without loading YouTube unasked.
+        // The chapters stay as visible links; YouTube's own watch page carries them as key moments.
       },
       {
         '@type': 'BreadcrumbList',
