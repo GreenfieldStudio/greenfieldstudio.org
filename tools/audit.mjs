@@ -90,7 +90,7 @@ if (new URL(BASE).pathname !== '/') {
 }
 
 const { chromium } = await loadPlaywright();
-const browser = await chromium.launch();
+const browser = await chromium.launch({ args: ['--disable-gpu'] }) // CPU only: the audit never needs the graphics card;
 const failures = [];
 const fail = (where, msg) => failures.push(`${where}: ${msg}`);
 if (chromeFailure) fail('menus/footers', chromeFailure.replace(/\n/g, '; '));
