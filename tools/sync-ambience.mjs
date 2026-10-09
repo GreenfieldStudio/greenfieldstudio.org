@@ -21,7 +21,7 @@ import { strictOptions } from './lib/args.mjs';
 import { readFeed, webp, lengthSeconds, isGone, pruneThumbs, esc, clock, matchEol } from './lib/youtube.mjs';
 import { displayTitle, ensureSlugs, secondsOf, syncFilmPages } from './lib/film-pages.mjs';
 import { spawnSync } from 'node:child_process';
-import { signupSection, privacyBlock } from './signup.mjs';
+import { signupSection, privacyBlock, privacyDate } from './signup.mjs';
 
 strictOptions(['offline', 'check']);
 const CHECK = process.argv.includes('--check');
@@ -158,7 +158,9 @@ const putAt = (text, name, body, indent) => {
 };
 html = putAt(html, 'signup', signupSection('../'), '    ');
 const privacyBefore = readFileSync(PRIVACY, 'utf8');
-const privacyAfter = putAt(privacyBefore.replace(/\r\n/g, '\n'), 'signup', privacyBlock(), '        ');
+let privacyAfter = putAt(privacyBefore.replace(/\r\n/g, '\n'), 'signup', privacyBlock(), '        ');
+// while the box is on, the privacy page's date is the day its email paragraph was written (tools/signup.mjs)
+if (privacyDate()) privacyAfter = privacyAfter.replace(/(<b>last updated )\d{4}-\d{2}-\d{2}(<\/b>)/, `$1${privacyDate()}$2`);
 if (CHECK) {
   // compare with line endings ignored: a Windows checkout may hold CRLF
   const problems = html.replace(/\r/g, '') !== before.replace(/\r/g, '') ? ['ambience/index.html differs from films.json'] : [];
