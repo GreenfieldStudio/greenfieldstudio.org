@@ -62,9 +62,25 @@ function specs(f) {
   };
 }
 
-/** Split the description into { summary, body: [{p}|{ul}], chapters: [{t, label}] }. */
-export function parseDescription(f) {
-  const text = (f.description || '').replace(/\r/g, '').trim();
+/**
+ * A film whose full master has no passing repeat check (tools/film-pages.json) must not say "no loops" /
+ * "never repeats" on this site, even if its YouTube text does. Known phrasings are cut cleanly; any other
+ * sentence that still makes the claim is dropped.
+ */
+const LOOP_WORDS = /\bloops?\b|\bnever repeats?\b|\bnothing repeats\b|\bnever (?:see|hear) the same\b/i;
+export function softenLoops(text) {
+  let t = text
+    .replace(/\bNothing in this video loops:\s*(\w)/g, (_, c) => c.toUpperCase())
+    .replace(/,?\s*so (?:it|nothing) never repeats|,\s*so nothing repeats(?::[^.]*)?/gi, '')
+    .replace(/\s*\bNo loops\.?/gi, '');
+  if (LOOP_WORDS.test(t)) t = t.split(/(?<=[.!?])\s+/).filter((x) => !LOOP_WORDS.test(x)).join(' ');
+  return t.replace(/\s+([.,])/g, '$1').trim();
+}
+
+/** Split the description into { summary, body: [{p}|{ul}], chapters: [{t, label}] }. `soften`: drop loop claims. */
+export function parseDescription(f, soften = false) {
+  const text0 = (f.description || '').replace(/\r/g, '').trim();
+  const text = soften ? text0.split('\n').map((l) => (LOOP_WORDS.test(l) ? softenLoops(l) : l)).join('\n') : text0;
   const blocks = text.split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
   const chapters = [];
   const body = [];
@@ -138,7 +154,7 @@ export function renderFilmPage(f, others, cfg = {}) {
   const name = displayTitle(f);
   const s = secondsOf(f);
   const sp = specs(f);
-  const d = parseDescription(f);
+  const d = parseDescription(f, !cfg.repeatCheck);
   const url = `${SITE_URL}/ambience/${f.slug}/`;
   const watch = `https://www.youtube.com/watch?v=${f.id}`;
   const title = `${name}${s ? ` · ${longLength(s)}${sp.res ? ' in 4K' : ''}` : sp.res ? ' · 4K' : ''} · Greenfield Ambience`;
