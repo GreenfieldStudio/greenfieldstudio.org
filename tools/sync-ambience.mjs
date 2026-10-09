@@ -73,6 +73,7 @@ if (!OFFLINE) {
     if (await isGone(k.id)) { console.log(`sync-ambience: ${k.id} is no longer public; removing it`); db.films = db.films.filter((x) => x.id !== k.id); }
   }
   pruneThumbs(DIR, [...db.films.map((f) => f.id), 'coming-reef']); // coming-reef-*.webp is the no-film placeholder
+  ensureSlugs(db); // a film the feed just brought in has no slug yet: without this its card links to "undefined/"
   db.films.sort((a, b) => (a.published < b.published ? 1 : a.published > b.published ? -1 : 0));
   writeFileSync(DB, JSON.stringify(db, null, 2) + '\n');
 } else if (!CHECK && slugsAdded) {
