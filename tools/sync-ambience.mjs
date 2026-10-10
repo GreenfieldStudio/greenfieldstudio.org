@@ -50,6 +50,9 @@ if (!OFFLINE) {
     const known = db.films.find((k) => k.id === f.id) || {};
     const film = { ...known, ...f };
     delete film.short;
+    // a partial feed entry (empty title, description or date) must not blank a film's page: keep what we had
+    for (const k of ['title', 'description', 'published']) if (!f[k] && known[k]) film[k] = known[k];
+    if (!film.title) { console.log(`sync-ambience: ${f.id} has no title in the feed; skipping it this run`); continue; }
     // thumbnails: the largest YouTube has, self-hosted in two sizes
     if (!existsSync(join(DIR, `${f.id}-1280.webp`))) {
       let ok = false;
@@ -133,7 +136,7 @@ const ld = db.films.length ? `<script type="application/ld+json">
       item: {
         '@type': 'VideoObject',
         // no "no loops" in the structured data either, unless the film's repeat check is on record
-        name: checked(f) ? f.title : softenTitle(f.title),
+        name: checked(f) ? f.title : softenTitle(f.title) || displayTitle(f),
         description: firstLine(f, !checked(f)),
         thumbnailUrl: `https://greenfieldstudio.org/assets/media/ambience/films/${f.id}-1280.webp`,
         uploadDate: f.published,
