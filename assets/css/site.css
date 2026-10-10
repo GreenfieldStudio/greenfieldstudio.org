@@ -705,7 +705,7 @@ section[id] { scroll-margin-top: 92px; }
 .gallery .spec > img,
 .gallery .spec > video,
 .gallery .spec > a > img { width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; display: block; }
-.gallery figcaption a { color: var(--cream-2); }
+.gallery figcaption a { color: var(--cream-2); display: inline-flex; align-items: center; justify-content: center; min-height: 24px; min-width: 24px; }
 .logo-tile { display: grid; place-items: center; aspect-ratio: 4 / 3; padding: 24px; }
 .logo-tile img { max-height: 100%; width: auto; object-fit: contain; }
 .logo-tile--light { background: #e9e4d6; }
@@ -768,7 +768,7 @@ section[id] { scroll-margin-top: 92px; }
   gap: 32px clamp(24px, 4vw, 56px);
   margin-bottom: 52px;
 }
-.footer-brand .brand { min-height: 0; }
+.footer-brand .brand { min-height: 24px; } /* WCAG 2.5.8: a tap target at least 24 px tall */
 .footer-brand p { margin: 14px 0 0; color: var(--cream-2); font-size: 15px; max-width: 24em; }
 .footer-mail { color: var(--cream); text-decoration: none; border-bottom: 1px solid var(--hair-2); padding-bottom: 1px; }
 .footer-mail:hover { border-bottom-color: var(--brass); }
@@ -822,3 +822,31 @@ section[id] { scroll-margin-top: 92px; }
   body::before, body::after { display: none; }
   body { background: #fff; color: #000; }
 }
+
+/* ── watch strip: a way to the channel above every footer (written by tools/sync-chrome.mjs) ── */
+.watch-strip { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px 32px; padding-bottom: 36px; margin-bottom: 40px; border-bottom: 1px solid var(--hair); }
+.watch-strip .footer-h { margin-bottom: 8px; }
+.watch-strip-text { margin: 0; max-width: 34em; font-size: 18px; line-height: 1.5; color: var(--cream-2); }
+
+/* ── a film's own page (written by tools/sync-ambience.mjs) ───────────────── */
+.embed { position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden; border: 1px solid var(--hair-2); background: #050a07; text-decoration: none; }
+.embed img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s var(--ease); }
+.embed:hover img { transform: scale(1.02); }
+.embed .film-play .play-disc { width: 84px; height: 84px; }
+.embed .film-play .play-disc svg { width: 30px; height: 30px; }
+.embed iframe { position: absolute; inset: 0; display: block; width: 100%; height: 100%; border: 0; }
+.embed.is-playing { cursor: default; }
+.chapters { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 4px 28px; margin-top: 24px; }
+.chapters a { display: flex; gap: 14px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--hair); color: var(--cream-2); text-decoration: none; }
+.chapters a:hover { color: var(--cream); }
+.chapters .anno { min-width: 4.5em; }
+
+/* ── optional email box (tools/signup.mjs; written by tools/sync-ambience.mjs) ── */
+.signup { margin-top: 28px; max-width: 40em; }
+.signup-label { display: block; margin-bottom: 8px; font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; color: var(--cream-3); }
+.signup-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.signup-row input[type="email"] { flex: 1 1 260px; min-height: 56px; padding: 12px 16px; border: 1px solid var(--hair-2); border-radius: var(--radius); background: rgba(5, 10, 7, 0.45); color: var(--cream); font: inherit; font-size: 17px; }
+.signup-row input[type="email"]::placeholder { color: var(--cream-3); }
+.signup-row input[type="email"]:focus-visible { outline: 2px solid var(--cream-2); outline-offset: 2px; }
+.signup-note { margin-top: 14px; font-size: 14px; color: var(--cream-3); }
+.signup-note a { color: var(--cream-2); }

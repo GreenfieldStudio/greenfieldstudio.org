@@ -69,6 +69,11 @@ const origin = new URL(BASE).origin;
    third parties; locally, no page may carry it. */
 const LIVE = !/^(localhost|127\.0\.0\.1)$/.test(new URL(BASE).hostname);
 const COUNTER = LIVE && !!CLOUDFLARE_BEACON_TOKEN;
+// one page per film (tools/sync-ambience.mjs); a live audit only covers pages that are already published
+try {
+  const filmList = JSON.parse(readFileSync(join(SITE, 'assets', 'media', 'ambience', 'films', 'films.json'), 'utf8')).films;
+  for (const f of filmList) if (f.slug) PAGES.splice(PAGES.findIndex((p) => p.name === 'press'), 0, { path: `ambience/${f.slug}/`, name: `film-${f.slug}` });
+} catch (_) { /* no films yet */ }
 const hostOf = (u) => { try { return new URL(u).hostname; } catch (_) { return ''; } };
 const counterBlocked = new Set(); // pages where this machine's network refused the beacon
 // Every page's menu and footer come from one template (tools/sync-chrome.mjs); a hand edit drifts.
@@ -85,7 +90,7 @@ if (new URL(BASE).pathname !== '/') {
 }
 
 const { chromium } = await loadPlaywright();
-const browser = await chromium.launch();
+const browser = await chromium.launch({ args: ['--disable-gpu'] }) // CPU only: the audit never needs the graphics card;
 const failures = [];
 const fail = (where, msg) => failures.push(`${where}: ${msg}`);
 if (chromeFailure) fail('menus/footers', chromeFailure.replace(/\n/g, '; '));
@@ -232,13 +237,19 @@ if (!LIVE) {
   // the films are listed newest first from films.json; the first card must open that film
   const films = JSON.parse(readFileSync(join(SITE, 'assets', 'media', 'ambience', 'films', 'films.json'), 'utf8')).films;
   if (films.length) {
-    if (await page.locator('#films a[data-film]').count() !== films.length) fail('ambience', 'the page does not list every film in films.json');
-    await page.locator('#films a[data-film]').first().click();
-    const player = page.locator('[data-player]');
-    if (!await player.evaluate((dialog) => dialog.open)) fail('ambience', 'a film card did not open the player');
-    if (!await player.locator(`iframe[src*="${films[0].id}"]`).count()) fail('ambience', 'player did not load the newest film');
-    await page.locator('[data-player-close]').click();
-    if (!await player.locator('iframe').waitFor({ state: 'detached', timeout: 2000 }).then(() => true).catch(() => false)) fail('ambience', 'closing the player did not remove the video');
+    if (await page.locator('#films a.film').count() !== films.length) fail('ambience', 'the page does not list every film in films.json');
+    // every card leads to the film's own page
+    for (const f of films) if (!await page.locator(`#films a.film[href="${f.slug}/"]`).count()) fail('ambience', `no card links to the page of ${f.id}`);
+    // a film page: nothing from YouTube until play, then the privacy-enhanced player, in place
+    const yt = [];
+    page.on('request', (r) => { if (/youtube|ytimg|googlevideo/.test(new URL(r.url()).hostname)) yt.push(r.url()); });
+    await page.goto(`${BASE}ambience/${films[0].slug}/`, { waitUntil: 'load' });
+    await page.waitForTimeout(500);
+    if (yt.length) fail('film page', `the page asked YouTube for something before a click: ${yt[0]}`);
+    if (!await page.locator('a[href*="sub_confirmation=1"]').count()) fail('film page', 'no Subscribe link');
+    await page.locator('a[data-embed]').click();
+    if (!await page.locator(`a[data-embed] iframe[src^="https://www.youtube-nocookie.com/embed/${films[0].id}"]`).count() && !await page.locator(`iframe[src^="https://www.youtube-nocookie.com/embed/${films[0].id}"]`).count()) fail('film page', 'play did not load the film in place');
+    await page.goto(BASE + 'ambience/', { waitUntil: 'load' });
   }
   // the home page's Shorts: listed from shorts.json, played in a portrait dialog, nothing from YouTube before a click
   const shorts = JSON.parse(readFileSync(join(SITE, 'assets', 'media', 'shorts', 'shorts.json'), 'utf8')).shorts;

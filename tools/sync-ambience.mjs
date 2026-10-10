@@ -19,6 +19,9 @@ import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { strictOptions } from './lib/args.mjs';
 import { readFeed, webp, lengthSeconds, isGone, pruneThumbs, esc, clock, matchEol } from './lib/youtube.mjs';
+import { displayTitle, ensureSlugs, secondsOf, syncFilmPages, softenTitle, firstLine, ownText } from './lib/film-pages.mjs';
+import { spawnSync } from 'node:child_process';
+import { signupSection, privacyBlock, privacyDate } from './signup.mjs';
 
 strictOptions(['offline', 'check']);
 const CHECK = process.argv.includes('--check');
@@ -29,10 +32,13 @@ const CHANNEL = 'https://www.youtube.com/@Greenfield.Ambience';
 const DIR = join(SITE, 'assets', 'media', 'ambience', 'films');
 const DB = join(DIR, 'films.json');
 const PAGE = join(SITE, 'ambience', 'index.html');
+const PRIVACY = join(SITE, 'privacy', 'index.html');
+const CFG = join(SITE, 'tools', 'film-pages.json'); // hand-written: per-film facts a description can't prove (the repeat check)
 
 mkdirSync(DIR, { recursive: true });
 const db = existsSync(DB) ? JSON.parse(readFileSync(DB, 'utf8')) : { films: [] };
 const scale = (w) => `scale=${w}:-2:flags=lanczos`;
+const slugsAdded = ensureSlugs(db); // a film's slug is set once and never changes: it is its page's address
 
 if (!OFFLINE) {
   // A Short on this channel is not a film: this list is the long-form ones.
@@ -44,6 +50,9 @@ if (!OFFLINE) {
     const known = db.films.find((k) => k.id === f.id) || {};
     const film = { ...known, ...f };
     delete film.short;
+    // a partial feed entry (empty title, description or date) must not blank a film's page: keep what we had
+    for (const k of ['title', 'description', 'published']) if (!f[k] && known[k]) film[k] = known[k];
+    if (!film.title) { console.log(`sync-ambience: ${f.id} has no title in the feed; skipping it this run`); continue; }
     // thumbnails: the largest YouTube has, self-hosted in two sizes
     if (!existsSync(join(DIR, `${f.id}-1280.webp`))) {
       let ok = false;
@@ -67,18 +76,20 @@ if (!OFFLINE) {
     if (await isGone(k.id)) { console.log(`sync-ambience: ${k.id} is no longer public; removing it`); db.films = db.films.filter((x) => x.id !== k.id); }
   }
   pruneThumbs(DIR, [...db.films.map((f) => f.id), 'coming-reef']); // coming-reef-*.webp is the no-film placeholder
+  ensureSlugs(db); // a film the feed just brought in has no slug yet: without this its card links to "undefined/"
   db.films.sort((a, b) => (a.published < b.published ? 1 : a.published > b.published ? -1 : 0));
   writeFileSync(DB, JSON.stringify(db, null, 2) + '\n');
+} else if (!CHECK && slugsAdded) {
+  writeFileSync(DB, JSON.stringify(db, null, 2) + '\n'); // --offline still records new slugs
 }
 
-// "Coral Reef Aquarium 4K 60fps | 1 Hour Relaxing…" → "Coral Reef Aquarium"; a hand-set displayTitle wins.
-const displayTitle = (f) => f.displayTitle || f.title.split(/\s+[|·—–]\s+/)[0].replace(/\s+4K(\s+60\s*fps)?$/i, '').trim() || f.title;
 // Only what the film's own description states: "4K" and the frame rate.
+// (ownText: never from a line that links to another film)
 const specOf = (f) => {
-  const d = f.description || '';
+  const d = ownText(f);
   const out = [];
-  if (/3840\s*[×x]\s*2160|\b4K\b/i.test(d + ' ' + f.title)) out.push('4K');
-  const fps = /(\d{2,3})\s*(?:fps|frames per second)/i.exec(d + ' ' + f.title);
+  if (/3840\s*[×x]\s*2160|\b4K\b/i.test(d)) out.push('4K');
+  const fps = /(\d{2,3})\s*(?:fps|frames per second)/i.exec(d);
   if (fps) out.push(`${fps[1]} fps`);
   return out;
 };
@@ -88,13 +99,13 @@ const PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><pat
 
 let block;
 if (db.films.length) {
-  block = `<div class="films${db.films.length === 1 ? ' films--featured' : ''}" style="margin-top:32px">\n${db.films.map((f) => `          <a class="film" href="https://www.youtube.com/watch?v=${f.id}" data-film="${f.id}" data-film-title="${esc(f.title)}" rel="noopener">
+  block = `<div class="films${db.films.length === 1 ? ' films--featured' : ''}" style="margin-top:32px">\n${db.films.map((f) => `          <a class="film" href="${f.slug}/">
             <span class="film-media">
               <img src="../assets/media/ambience/films/${f.id}-640.webp" srcset="../assets/media/ambience/films/${f.id}-640.webp 640w, ../assets/media/ambience/films/${f.id}-1280.webp 1280w" sizes="(max-width: 520px) 100vw, (max-width: 860px) 50vw, 380px" width="1280" height="720" loading="lazy" decoding="async" alt="">
-              <span class="film-play" aria-hidden="true"><span class="play-disc">${PLAY}</span></span>${f.seconds ? `\n              <span class="film-len">${clock(f.seconds)}</span>` : ''}
+              <span class="film-play" aria-hidden="true"><span class="play-disc">${PLAY}</span></span>${secondsOf(f) ? `\n              <span class="film-len">${clock(secondsOf(f))}</span>` : ''}
             </span>
             <h3>${esc(displayTitle(f))}</h3>
-            <span class="anno">${[f.seconds ? length(f.seconds) : '', ...specOf(f), 'on YouTube'].filter(Boolean).join(' · ')}</span>
+            <span class="anno">${[secondsOf(f) ? length(secondsOf(f)) : '', ...specOf(f), 'watch'].filter(Boolean).join(' · ')}</span>
           </a>`).join('\n')}
         </div>`;
 } else {
@@ -113,6 +124,8 @@ if (db.films.length) {
         </div>`;
 }
 
+const cfg = existsSync(CFG) ? JSON.parse(readFileSync(CFG, 'utf8')) : {};
+const checked = (f) => !!cfg[f.id]?.repeatCheck;
 const ld = db.films.length ? `<script type="application/ld+json">
   ${JSON.stringify({
     '@context': 'https://schema.org',
@@ -122,12 +135,13 @@ const ld = db.films.length ? `<script type="application/ld+json">
       position: i + 1,
       item: {
         '@type': 'VideoObject',
-        name: f.title,
-        description: (f.description || f.title).split('\n')[0],
+        // no "no loops" in the structured data either, unless the film's repeat check is on record
+        name: checked(f) ? f.title : softenTitle(f.title) || displayTitle(f),
+        description: firstLine(f, !checked(f)),
         thumbnailUrl: `https://greenfieldstudio.org/assets/media/ambience/films/${f.id}-1280.webp`,
         uploadDate: f.published,
-        ...(f.seconds ? { duration: iso(f.seconds) } : {}),
-        url: `https://www.youtube.com/watch?v=${f.id}`,
+        ...(secondsOf(f) ? { duration: iso(secondsOf(f)) } : {}),
+        url: `https://greenfieldstudio.org/ambience/${f.slug}/`,
         embedUrl: `https://www.youtube-nocookie.com/embed/${f.id}`,
       },
     })),
@@ -143,13 +157,32 @@ const put = (name, body) => {
 };
 put('films', block);
 put('films-ld', ld);
+// the optional email box (tools/signup.mjs; empty while switched off) and its paragraph on the privacy page
+const putAt = (text, name, body, indent) => {
+  const re = new RegExp(`(<!-- ${name}:start -->)[\\s\\S]*?(<!-- ${name}:end -->)`);
+  if (!re.test(text)) throw new Error(`no ${name} markers`);
+  return text.replace(re, (_, a, b) => `${a}${body ? `\n${indent}${body}` : ''}\n${indent}${b}`);
+};
+html = putAt(html, 'signup', signupSection('../'), '    ');
+const privacyBefore = readFileSync(PRIVACY, 'utf8');
+let privacyAfter = putAt(privacyBefore.replace(/\r\n/g, '\n'), 'signup', privacyBlock(), '        ');
+// while the box is on, the privacy page's date is the day its email paragraph was written (tools/signup.mjs)
+if (privacyDate()) privacyAfter = privacyAfter.replace(/(<b>last updated )\d{4}-\d{2}-\d{2}(<\/b>)/, `$1${privacyDate()}$2`);
 if (CHECK) {
   // compare with line endings ignored: a Windows checkout may hold CRLF
-  if (html.replace(/\r/g, '') !== before.replace(/\r/g, '')) {
-    console.error('sync-ambience: ambience/index.html differs from films.json. Run: node tools/sync-ambience.mjs --offline');
+  const problems = html.replace(/\r/g, '') !== before.replace(/\r/g, '') ? ['ambience/index.html differs from films.json'] : [];
+  if (privacyAfter.replace(/\r/g, '') !== privacyBefore.replace(/\r/g, '')) problems.push('privacy/index.html differs from tools/signup.mjs');
+  problems.push(...syncFilmPages({ site: SITE, db, cfgFile: CFG, check: true }));
+  if (problems.length) {
+    console.error(`sync-ambience: ${problems.join('; ')}. Run: node tools/sync-ambience.mjs --offline`);
     process.exit(1);
   }
   process.exit(0);
 }
 writeFileSync(PAGE, matchEol(html, before));
+writeFileSync(PRIVACY, matchEol(privacyAfter, privacyBefore));
+syncFilmPages({ site: SITE, db, cfgFile: CFG, check: false });
+// the film pages get the shared menu and footer from tools/sync-chrome.mjs
+const chrome = spawnSync(process.execPath, [join(SITE, 'tools', 'sync-chrome.mjs')], { encoding: 'utf8' });
+if (chrome.status) throw new Error(`sync-chrome failed: ${chrome.stderr || chrome.stdout}`);
 console.log(`sync-ambience: ${db.films.length} public film(s)${db.films.length ? ': ' + db.films.map((f) => displayTitle(f)).join(' | ') : ' (showing the coming-soon card)'}`);

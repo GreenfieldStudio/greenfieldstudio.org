@@ -1,10 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://greenfieldstudio.org/</loc><lastmod>2026-09-25</lastmod></url>
+  <url><loc>https://greenfieldstudio.org/</loc><lastmod>2026-10-09</lastmod></url>
   <url><loc>https://greenfieldstudio.org/minigolf-pro/</loc><lastmod>2026-09-25</lastmod></url>
-  <url><loc>https://greenfieldstudio.org/ambience/</loc><lastmod>2026-09-25</lastmod></url>
-  <url><loc>https://greenfieldstudio.org/journal/</loc><lastmod>2026-09-25</lastmod></url>
-  <url><loc>https://greenfieldstudio.org/journal/coral-reef/</loc><lastmod>2026-09-25</lastmod></url>
+  <url><loc>https://greenfieldstudio.org/ambience/</loc><lastmod>2026-10-09</lastmod></url>
+  <!-- films:start -->
+  <url><loc>https://greenfieldstudio.org/ambience/cozy-halloween-cabin-sleep/</loc><lastmod>2026-10-09</lastmod></url>
+  <url><loc>https://greenfieldstudio.org/ambience/haunted-coral-reef/</loc><lastmod>2026-10-05</lastmod></url>
+  <url><loc>https://greenfieldstudio.org/ambience/cozy-halloween-cabin-ambience/</loc><lastmod>2026-10-02</lastmod></url>
+  <url><loc>https://greenfieldstudio.org/ambience/sunlit-coral-reef/</loc><lastmod>2026-09-30</lastmod></url>
+  <url><loc>https://greenfieldstudio.org/ambience/moonlit-aquarium/</loc><lastmod>2026-09-28</lastmod></url>
+  <url><loc>https://greenfieldstudio.org/ambience/coral-reef-aquarium/</loc><lastmod>2026-09-25</lastmod></url>
+  <!-- films:end -->
+  <url><loc>https://greenfieldstudio.org/journal/</loc><lastmod>2026-10-09</lastmod></url>
+  <url><loc>https://greenfieldstudio.org/journal/coral-reef/</loc><lastmod>2026-10-09</lastmod></url>
   <url><loc>https://greenfieldstudio.org/journal/level-editor/</loc><lastmod>2026-09-25</lastmod></url>
   <url><loc>https://greenfieldstudio.org/journal/level-critic/</loc><lastmod>2026-09-24</lastmod></url>
   <url><loc>https://greenfieldstudio.org/play/</loc><lastmod>2026-09-24</lastmod></url>

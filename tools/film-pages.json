@@ -1,0 +1,10 @@
+{
+  "_readme": "Hand-written. Key = YouTube video id. \"repeatCheck\" = the date audio_repeat_check.py (and the picture check) passed on that film's FULL master, as YYYY-MM-DD. A film page shows 'loops: none' and keeps the film's own 'no loops' wording ONLY when this is set; for any other film the pages drop those sentences. Leave a film out until the check has passed.",
+  "_example": { "AAAAAAAAAAA": { "repeatCheck": "2026-10-01" } },
+  "HnjpBh_0lKk": { "repeatCheck": "2026-09-30", "_note": "Cozy Halloween Cabin 3h: audio_repeat_check 1.1 PASS on CozyCabin_Halloween_3h_4K60_seed969187783_audiofix2.mp4 (ShortsPipeline/test/halloween-master/v2/audiofix2.md); the uploaded master" },
+  "liWuRuThk1k": { "repeatCheck": "2026-10-10", "_note": "Coral Reef Aquarium 1h: audio_repeat_check 1.1 PASS on the full reef_sound.mp4 of rec_20260924_0044 (ShortsPipeline/test/reef-masters/coral-reef-1h.md; KNOWLEDGE/REPEAT-CHECKS-OCT10.md); earlier 1.0 PASS 2026-09-28" },
+  "PLLoPWFe6pQ": { "repeatCheck": "2026-10-09", "_note": "Cozy Halloween Cabin Sleep 8h: audio_repeat_check 1.1 PASS on CozyCabin_Halloween_Sleep8h_4K30_seed-1532120297_-22LUFS.mp4 (ShortsPipeline/test/halloween-master/v2/sleep8h_22LUFS.md; KNOWLEDGE/REPEAT-CHECKS-OCT10.md)" },
+  "4_k3eMn-HmE": { "repeatCheck": "2026-10-10", "_note": "Sunlit Coral Reef 1h: audio_repeat_check 1.1 PASS on the full master scene.mp4 of sunlit-reef-2026-09-25T12-35-55-419Z (ShortsPipeline/test/reef-masters/sunlit-reef-1h.md; KNOWLEDGE/REPEAT-CHECKS-OCT10.md); upload identity matched by size on B2 only" },
+  "6rQ4AMiQng0": { "repeatCheck": "2026-10-10", "_note": "Moonlit Aquarium 2h: audio_repeat_check 1.1 PASS on the full master scene.mp4 of moonlit-aquarium-2026-09-25T10-27-41-474Z (ShortsPipeline/test/reef-masters/moonlit-aquarium-2h.md; KNOWLEDGE/REPEAT-CHECKS-OCT10.md); upload identity matched by size on B2 only" },
+  "_x0pUO5gQcB0": "Haunted Coral Reef 3h: audio_repeat_check 1.1 FAIL on the full reef.mp4 (2026-10-10, ShortsPipeline/test/reef-masters/haunted-reef-3h.md). Must stay out: its page drops the description's loop sentences."
+}

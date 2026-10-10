@@ -57,6 +57,26 @@ YouTube's privacy-enhanced player (youtube-nocookie.com) inside a dialog, create
 Each card's length, "4K" and frame rate are read from the film's own description, so a spec is never
 shown that the video doesn't state.
 
+**One page per film.** `sync-ambience` also writes `ambience/<slug>/index.html` for every film (the card on
+`/ambience/` links to it), a 1200 × 630 `<id>-og.jpg` share image, and the film block in `sitemap.xml`.
+A film's slug is chosen once from its title (stored in `films.json`) and never changes, because it is the
+page's address. Each page is built only from the film's own YouTube text: the first paragraph is the lede
+and meta description, paragraphs with a link, hashtag or @handle are left out, `0:00 Label` lines become
+the chapter list, and the length, 4K and frame rate come from the title and description. The player is the
+same click-to-load privacy-enhanced player as everywhere (nothing from YouTube before a click), in place.
+The generated pages carry the shared menu and footer through `sync-chrome` (which `sync-ambience` runs).
+`tools/film-pages.json` is hand-written: add `"<video id>": { "repeatCheck": "YYYY-MM-DD" }` once
+`audio_repeat_check.py` (and the picture check) has passed on that film's full master, and only then does
+the page's readout say `loops: none`. The page text itself mirrors the YouTube description, so a "No Loops"
+sentence there is only as true as the description.
+
+**The email box** (`tools/signup.mjs`) is OFF (`SIGNUP = null`): no box, no privacy paragraph. It is a plain
+`<form method="post">` to a provider's embed address, with no script from the provider and nothing requested
+until the button is pressed. The owner opens the account and sets `SIGNUP` (provider, form address, privacy
+URL); then `node tools/sync-ambience.mjs --offline` writes the box on `/ambience/` and every film page and the
+"Email list" paragraph on the privacy page. Deploy refuses to publish if the switch and the privacy page
+disagree, like the visitor counter. The box adds no third party at load, so the audit's allowlist is unchanged.
+
 **Shorts** on the home page ("on the channel") work the same way: `sync-shorts` reads the Greenfield
 Studio feed, keeps the six newest videos the feed links as `/shorts/` (long videos on that channel are
 ignored), self-hosts the picture from the middle third of each Short's thumbnail, and plays it in the

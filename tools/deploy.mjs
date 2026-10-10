@@ -21,6 +21,7 @@ import { execFileSync } from 'node:child_process';
 import { dirname, join, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CLOUDFLARE_BEACON_TOKEN as TOKEN, BEACON_SRC, PRIVACY_MARKER, beaconTag, countsPage, tokenLooksValid } from './analytics.mjs';
+import { SIGNUP, PRIVACY_SIGNUP_MARKER, signupProblems } from './signup.mjs';
 import { strictOptions } from './lib/args.mjs';
 
 strictOptions(['push', 'staging', 'base']);
@@ -35,7 +36,7 @@ const STAGING = process.argv.includes('--staging');
 const baseAt = process.argv.indexOf('--base');
 const BASE = baseAt > -1 ? resolve(process.argv[baseAt + 1] || '') : null;
 if (baseAt > -1 && !process.argv[baseAt + 1]) { console.error('deploy: --base needs a directory.'); process.exit(2); }
-const EXCLUDE = new Set(['.git', '.github', '.deploy', '.live', '.audit', 'tools', 'node_modules', 'README.md', '.gitignore', 'package.json', 'CLAUDE.md', '.claude']);
+const EXCLUDE = new Set(['.git', '.github', '.deploy', '.live', '.audit', 'tools', 'node_modules', 'README.md', '.gitignore', 'package.json', 'CLAUDE.md', '.claude', 'drafts', 'PLAN-CONVERSION.md']);
 const git = (args, cwd = SITE) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const die = (m) => { console.error(`deploy: ${m}`); process.exit(1); };
 
@@ -96,6 +97,15 @@ if (!!TOKEN !== privacyNamesIt) {
     ? `the counter is switched on but privacy/index.html doesn't mention ${PRIVACY_MARKER}. Update the privacy page in the same change.`
     : `privacy/index.html mentions ${PRIVACY_MARKER} but the counter is off (no token in tools/analytics.mjs).`);
 }
+// ── the optional email box (tools/signup.mjs): the box and the privacy paragraph go live together ──
+const signupOn = !!SIGNUP;
+const privacyHtml = readFileSync(join(OUT, 'privacy', 'index.html'), 'utf8');
+if (signupOn !== privacyHtml.includes(PRIVACY_SIGNUP_MARKER)) {
+  die(signupOn
+    ? 'the email box is switched on but privacy/index.html has no "Email list" paragraph. Run: node tools/sync-ambience.mjs --offline'
+    : 'privacy/index.html has an "Email list" paragraph but the email box is off (tools/signup.mjs). Run: node tools/sync-ambience.mjs --offline');
+}
+if (signupOn && signupProblems().length) die(`tools/signup.mjs: the email box is on but these are missing or still placeholders: ${signupProblems().join(', ')}.`);
 let counted = 0;
 if (TOKEN) {
   if (!tokenLooksValid(TOKEN)) die('the token in tools/analytics.mjs looks malformed. Copy it from Cloudflare → Web Analytics → Manage site.');
