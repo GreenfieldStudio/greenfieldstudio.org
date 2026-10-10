@@ -1,0 +1,1 @@
+function t(){const t=new Date,e=t.getUTCFullYear(),n=Math.floor(t.getUTCMonth()/3),a=3*n;return{id:`s${e}q${n+1}`,start:new Date(Date.UTC(e,a,1)),end:new Date(Date.UTC(e,a+3,1))}}export{t as getActiveSeason};

@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="480" viewBox="0 0 1920 480">
+  <!--
+    ⚠️ R3947 — THIS FILE NO LONGER PRODUCES public/itch-banner.png. That PNG is now
+    composited by branding/ai-cover.html (?size=banner) via build-ai-covers.mjs: the
+    SAME lockup below, over an SDXL sky plate that fades to #0B1430 at the edges so the
+    banner still merges with the itch theme. Rasterizing this SVG would silently revert
+    it to the flat-field version. The lockup geometry here remains the reference copy —
+    ai-cover.html duplicates it verbatim, so keep the two in step if you change it.
+
+    Minigolf Pro — itch.io page banner (1920x480, 4:1).
+    Logo-forward: ball + gold->teal swoosh (matches src/core/brand.jsx LogoMark
+    geometry exactly) + Fredoka wordmark. Brand palette: BRAND_GOLD #FFD93D,
+    BRAND_TEAL #4ECDC4, navy field #0a1628. Render to PNG via Playwright (loads
+    Fredoka from Google Fonts) -> public/itch-banner.png.
+  -->
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&amp;display=swap');
+      .wm { font-family: 'Fredoka', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+    </style>
+    <!-- Wordmark + swoosh share the brand gold->teal sweep -->
+    <linearGradient id="sweep" x1="0" y1="0.5" x2="1" y2="0.5">
+      <stop offset="0%"   stop-color="#FFD93D"/>
+      <stop offset="100%" stop-color="#4ECDC4"/>
+    </linearGradient>
+    <!-- Golf ball — radial 3D shading (mirrors LogoMark bg gradient) -->
+    <radialGradient id="ball" cx="0.35" cy="0.35" r="0.7">
+      <stop offset="0%"   stop-color="#ffffff"/>
+      <stop offset="70%"  stop-color="#f0f0f0"/>
+      <stop offset="100%" stop-color="#d8d8d8"/>
+    </radialGradient>
+    <!-- Soft teal backlight behind the lockup for depth -->
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%"   stop-color="#4ECDC4" stop-opacity="0.22"/>
+      <stop offset="60%"  stop-color="#4ECDC4" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#4ECDC4" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="ballclip">
+      <circle cx="560" cy="232" r="108"/>
+    </clipPath>
+  </defs>
+
+  <!-- Field — flat site bg color so the banner merges edge-to-edge with the page -->
+  <rect width="1920" height="480" fill="#0B1430"/>
+
+  <!-- Backlight glow centered on the lockup -->
+  <ellipse cx="940" cy="240" rx="820" ry="300" fill="url(#glow)"/>
+
+  <!-- Faint star field (brand night-sky read) -->
+  <g fill="#ffffff">
+    <circle cx="120"  cy="70"  r="2"   opacity="0.40"/>
+    <circle cx="300"  cy="120" r="1.4" opacity="0.25"/>
+    <circle cx="210"  cy="380" r="1.6" opacity="0.30"/>
+    <circle cx="430"  cy="60"  r="1.4" opacity="0.22"/>
+    <circle cx="1500" cy="90"  r="2"   opacity="0.40"/>
+    <circle cx="1660" cy="160" r="1.5" opacity="0.28"/>
+    <circle cx="1780" cy="70"  r="1.4" opacity="0.22"/>
+    <circle cx="1560" cy="400" r="1.6" opacity="0.30"/>
+    <circle cx="1820" cy="330" r="1.4" opacity="0.24"/>
+    <circle cx="1380" cy="430" r="1.3" opacity="0.20"/>
+    <circle cx="80"   cy="240" r="1.3" opacity="0.20"/>
+    <circle cx="1700" cy="260" r="1.3" opacity="0.20"/>
+  </g>
+
+  <!-- ===== Logo mark: ball + swoosh (exact LogoMark proportions, R=108, ball@560,232) ===== -->
+  <!-- Swoosh arc (behind ball) -->
+  <path d="M 322.4 350.8 Q 473.6 37.6 700.4 167.2"
+        fill="none" stroke="url(#sweep)" stroke-width="54" stroke-linecap="round"/>
+  <!-- Ball drop shadow -->
+  <ellipse cx="565.4" cy="240.6" rx="108" ry="99.4" fill="rgba(0,0,0,0.28)"/>
+  <!-- Ball body -->
+  <circle cx="560" cy="232" r="108" fill="url(#ball)"/>
+  <!-- Dimples -->
+  <circle cx="533"   cy="219"   r="14" fill="rgba(0,0,0,0.12)"/>
+  <circle cx="592.4" cy="208.2" r="14" fill="rgba(0,0,0,0.12)"/>
+  <circle cx="565.4" cy="264.4" r="14" fill="rgba(0,0,0,0.12)"/>
+  <!-- Highlight crescent (clipped to ball) -->
+  <ellipse cx="536.2" cy="194.2" rx="43.2" ry="21.6"
+           transform="rotate(-25 536.2 194.2)"
+           fill="rgba(255,255,255,0.5)" clip-path="url(#ballclip)"/>
+
+  <!-- ===== Wordmark ===== -->
+  <text class="wm" x="745" y="286" font-size="150" font-weight="700"
+        letter-spacing="-1" fill="url(#sweep)">Minigolf Pro</text>
+
+  <!-- Understated tagline -->
+  <text class="wm" x="750" y="346" font-size="30" font-weight="500"
+        letter-spacing="5.5" fill="#aec2d6" opacity="0.82">80 HOLES &#183; ONLINE MULTIPLAYER &#183; LEVEL EDITOR</text>
+</svg>
