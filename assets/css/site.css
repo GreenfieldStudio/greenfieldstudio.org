@@ -705,7 +705,7 @@ section[id] { scroll-margin-top: 92px; }
 .gallery .spec > img,
 .gallery .spec > video,
 .gallery .spec > a > img { width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; display: block; }
-.gallery figcaption a { color: var(--cream-2); }
+.gallery figcaption a { color: var(--cream-2); display: inline-flex; align-items: center; min-height: 24px; }
 .logo-tile { display: grid; place-items: center; aspect-ratio: 4 / 3; padding: 24px; }
 .logo-tile img { max-height: 100%; width: auto; object-fit: contain; }
 .logo-tile--light { background: #e9e4d6; }
@@ -768,7 +768,7 @@ section[id] { scroll-margin-top: 92px; }
   gap: 32px clamp(24px, 4vw, 56px);
   margin-bottom: 52px;
 }
-.footer-brand .brand { min-height: 0; }
+.footer-brand .brand { min-height: 24px; } /* WCAG 2.5.8: a tap target at least 24 px tall */
 .footer-brand p { margin: 14px 0 0; color: var(--cream-2); font-size: 15px; max-width: 24em; }
 .footer-mail { color: var(--cream); text-decoration: none; border-bottom: 1px solid var(--hair-2); padding-bottom: 1px; }
 .footer-mail:hover { border-bottom-color: var(--brass); }
