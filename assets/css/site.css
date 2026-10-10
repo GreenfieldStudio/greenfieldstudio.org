@@ -705,7 +705,7 @@ section[id] { scroll-margin-top: 92px; }
 .gallery .spec > img,
 .gallery .spec > video,
 .gallery .spec > a > img { width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; display: block; }
-.gallery figcaption a { color: var(--cream-2); display: inline-flex; align-items: center; min-height: 24px; }
+.gallery figcaption a { color: var(--cream-2); display: inline-flex; align-items: center; justify-content: center; min-height: 24px; min-width: 24px; }
 .logo-tile { display: grid; place-items: center; aspect-ratio: 4 / 3; padding: 24px; }
 .logo-tile img { max-height: 100%; width: auto; object-fit: contain; }
 .logo-tile--light { background: #e9e4d6; }
