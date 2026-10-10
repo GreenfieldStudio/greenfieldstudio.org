@@ -52,8 +52,16 @@ export function secondsOf(f) {
 const longLength = (s) => (s >= 5400 ? `${+(s / 3600).toFixed(1)} hours` : s >= 3300 && s < 3900 ? '1 hour' : `${Math.round(s / 60)} minutes`);
 const iso = (s) => `PT${Math.floor(s / 3600)}H${Math.floor((s % 3600) / 60)}M${s % 60}S`;
 
+/**
+ * The title and the description lines that speak about THIS film. A line with a link, hashtag or @handle
+ * is housekeeping and often points at another film ("The 3-hour version, with chimes and 4K 60fps: https://…"),
+ * so the specs (4K, frame rate) are never read from it: a 30 fps film once showed as 60 fps that way.
+ */
+const LINKY = /https?:\/\/|(^|\s)#\w|(^|\s)@\w/;
+export const ownText = (f) => `${f.title}\n${(f.description || '').split('\n').filter((l) => !LINKY.test(l)).join('\n')}`;
+
 function specs(f) {
-  const text = `${f.title}\n${f.description || ''}`;
+  const text = ownText(f);
   const fps = /(\d{2,3})\s*(?:fps|frames per second)/i.exec(text);
   return {
     res: /3840\s*[×x]\s*2160/.test(text) ? '3840 × 2160' : /\b4K\b/i.test(text) ? '4K' : '',

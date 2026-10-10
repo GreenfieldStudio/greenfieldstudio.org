@@ -19,7 +19,7 @@ import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { strictOptions } from './lib/args.mjs';
 import { readFeed, webp, lengthSeconds, isGone, pruneThumbs, esc, clock, matchEol } from './lib/youtube.mjs';
-import { displayTitle, ensureSlugs, secondsOf, syncFilmPages, softenTitle, firstLine } from './lib/film-pages.mjs';
+import { displayTitle, ensureSlugs, secondsOf, syncFilmPages, softenTitle, firstLine, ownText } from './lib/film-pages.mjs';
 import { spawnSync } from 'node:child_process';
 import { signupSection, privacyBlock, privacyDate } from './signup.mjs';
 
@@ -81,11 +81,12 @@ if (!OFFLINE) {
 }
 
 // Only what the film's own description states: "4K" and the frame rate.
+// (ownText: never from a line that links to another film)
 const specOf = (f) => {
-  const d = f.description || '';
+  const d = ownText(f);
   const out = [];
-  if (/3840\s*[×x]\s*2160|\b4K\b/i.test(d + ' ' + f.title)) out.push('4K');
-  const fps = /(\d{2,3})\s*(?:fps|frames per second)/i.exec(d + ' ' + f.title);
+  if (/3840\s*[×x]\s*2160|\b4K\b/i.test(d)) out.push('4K');
+  const fps = /(\d{2,3})\s*(?:fps|frames per second)/i.exec(d);
   if (fps) out.push(`${fps[1]} fps`);
   return out;
 };
