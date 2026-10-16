@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="500" viewBox="0 0 1500 500">
+  <defs>
+    <!-- Daylight sky — linear gradient top→horizon. Calm, uniform; no light-source anchor. -->
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#9DC4E6"/>
+      <stop offset="100%" stop-color="#E4F0F7"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Full-bleed daylight sky -->
+  <rect width="1500" height="500" fill="url(#sky)"/>
+
+  <!-- Back hill — brightened day-green -->
+  <path d="M 0 340 Q 400 230 1500 400 L 1500 500 L 0 500 Z" fill="#7FC988"/>
+  <path d="M 30 332 Q 400 222 1470 392" fill="none" stroke="#C9E8CE" stroke-width="3.2" stroke-linecap="round"/>
+
+  <!-- Mid hill — depth layer -->
+  <path d="M 380 480 Q 900 300 1500 430 L 1500 500 L 380 500 Z" fill="#5FA868"/>
+  <path d="M 430 466 Q 900 292 1470 422" fill="none" stroke="#9DD0A4" stroke-width="2.6" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- Front hill — brightened deep green -->
+  <path d="M 0 470 Q 1200 340 1500 460 L 1500 500 L 0 500 Z" fill="#3D8A4E"/>
+  <path d="M 60 462 Q 1200 332 1460 452" fill="none" stroke="#7FC988" stroke-width="2.8" stroke-linecap="round" opacity="0.7"/>
+
+  <!-- Game hint: golf flag + ball (unchanged from prior pass) -->
+  <g>
+    <line x1="1240" y1="370" x2="1240" y2="334" stroke="#F0F4F2" stroke-width="2.4" stroke-linecap="round"/>
+    <circle cx="1240" cy="333" r="1.8" fill="#F0F4F2"/>
+    <path d="M 1240 336 L 1272 345 L 1240 354 Z" fill="#4ECDC4"/>
+    <circle cx="1212" cy="378" r="4.4" fill="#FFD93D"/>
+    <ellipse cx="1212" cy="383" rx="4.4" ry="1.2" fill="#000" opacity="0.22"/>
+  </g>
+
+  <!-- Wordmark — horizontally centered (text-anchor=middle), dark green for daylight contrast -->
+  <text x="750" y="200" text-anchor="middle"
+        font-family="Fredoka, 'Nunito', 'Quicksand', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+        font-size="78" font-weight="700" letter-spacing="2" fill="#2D7A3E">GREENFIELD STUDIO</text>
+
+  <!-- Tagline — also centered, mid-green at 0.85 opacity. Cap-top y≈230, back-hill ridge y≈297-313 → 30-50px sky gap -->
+  <text x="750" y="250" text-anchor="middle"
+        font-family="Fredoka, 'Nunito', 'Quicksand', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+        font-size="28" font-weight="500" letter-spacing="6" fill="#3D8A4E" opacity="0.85">Indie games, made bright</text>
+</svg>
