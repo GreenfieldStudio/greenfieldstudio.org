@@ -7,9 +7,10 @@ and no runtime dependencies. The game at `/play/` is the Minigolf Pro **default 
 the same one itch.io serves, copied in by a script.
 
 ```
-index.html            studio home: hero, our work (one card per project), the play stage, studio, journal, contact
+index.html            studio home: Watch / Wear / Play doors in the first screen, the play stage, the course, studio, journal, contact
 minigolf-pro/         the game's page
 ambience/             Greenfield Ambience: the films (list written by tools/sync-ambience.mjs), the worlds
+wallpapers/           the worlds as live wallpapers for Windows: status only until a wallpaper is on sale (hand-written; update it when one ships)
 journal/              devlog: index, one folder per post, feed.xml (Atom)
 press/                press kit (press/files/ + the zip are generated)
 privacy/              privacy note for the site; links the game's own policy
@@ -73,7 +74,7 @@ sentence there is only as true as the description.
 **The email box** (`tools/signup.mjs`) is OFF (`SIGNUP = null`): no box, no privacy paragraph. It is a plain
 `<form method="post">` to a provider's embed address, with no script from the provider and nothing requested
 until the button is pressed. The owner opens the account and sets `SIGNUP` (provider, form address, privacy
-URL); then `node tools/sync-ambience.mjs --offline` writes the box on `/ambience/` and every film page and the
+URL); then `node tools/sync-ambience.mjs --offline` writes the box on `/ambience/`, `/wallpapers/` and every film page and the
 "Email list" paragraph on the privacy page. Deploy refuses to publish if the switch and the privacy page
 disagree, like the visitor counter. The box adds no third party at load, so the audit's allowlist is unchanged.
 

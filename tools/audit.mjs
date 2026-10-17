@@ -38,6 +38,7 @@ const PAGES = [
   { path: '', name: 'home' },
   { path: 'minigolf-pro/', name: 'game' },
   { path: 'ambience/', name: 'ambience' },
+  { path: 'wallpapers/', name: 'wallpapers' },
   { path: 'press/', name: 'press' },
   { path: 'privacy/', name: 'privacy' },
   { path: 'journal/', name: 'journal' },
@@ -183,17 +184,18 @@ for (const vp of VIEWPORTS) {
     }
     await page.waitForTimeout(250);
     if (pg.name === 'home') {
-      const preview = await page.locator('.home-hero-preview video').evaluate((video) => ({
-        muted: video.muted,
-        loop: video.loop,
-        poster: video.poster,
-        sourceLoaded: [...video.querySelectorAll('source')].some((source) => source.hasAttribute('src')),
-        top: video.getBoundingClientRect().top,
-      })).catch(() => null);
-      if (!preview || !preview.muted || !preview.loop || !preview.poster.includes('clip-windmill.webp')) fail(where, 'gameplay preview or poster missing');
-      else {
-        if (preview.sourceLoaded) fail(where, 'gameplay video loaded despite reduced motion');
-        if (preview.top >= vp.height) fail(where, 'gameplay preview is below the first viewport');
+      // Watch / Wear / Play: three doors, each with a working link, in the first viewport
+      const doors = await page.locator('.doors .door').evaluateAll((els) => els.map((el) => ({
+        label: el.querySelector('.anno')?.textContent.trim() || '',
+        hrefs: [...el.querySelectorAll('a[href]')].map((a) => a.getAttribute('href')),
+        top: el.getBoundingClientRect().top,
+      }))).catch(() => []);
+      const want = [['watch', 'ambience/'], ['wear', 'wallpapers/'], ['play', 'play/?play=1']];
+      if (doors.length !== 3) fail(where, `expected 3 doors (watch, wear, play) in the first screen, found ${doors.length}`);
+      else for (const [i, [word, href]] of want.entries()) {
+        if (!doors[i].label.toLowerCase().includes(word)) fail(where, `door ${i + 1} is not "${word}": ${doors[i].label}`);
+        if (!doors[i].hrefs.includes(href)) fail(where, `door "${word}" does not link to ${href}`);
+        if (doors[i].top >= vp.height) fail(where, `door "${word}" is below the first viewport`);
       }
     }
     for (const e of errors) fail(where, `console: ${e.slice(0, 160)}`);
@@ -216,16 +218,6 @@ for (const vp of VIEWPORTS) {
     }
     await page.close();
   }
-  await ctx.close();
-}
-
-if (!LIVE) {
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, reducedMotion: 'no-preference' });
-  const page = await ctx.newPage();
-  await page.goto(BASE, { waitUntil: 'load' });
-  const playing = await page.waitForFunction(() => document.querySelector('.home-hero-preview video')?.currentTime > 0.1, null, { timeout: 5000 })
-    .then(() => true).catch(() => false);
-  if (!playing) fail('home preview', 'gameplay clip did not start when visible and motion was allowed');
   await ctx.close();
 }
 
@@ -282,11 +274,11 @@ if (!LIVE) {
   await page.goto(BASE + 'minigolf-pro/', { waitUntil: 'load' });
   const gameUi = await page.evaluate(() => ({
     trailerNearTop: document.querySelector('#trailer')?.previousElementSibling?.classList.contains('hero'),
-    live: document.querySelector('#multiplayer .status--live')?.textContent.trim(),
-    soon: document.querySelector('#multiplayer .status--soon')?.textContent.trim(),
+    labels: [...document.querySelectorAll('#multiplayer .status')].map((s) => s.textContent.trim()).join('|'),
   }));
   if (!gameUi.trailerNearTop) fail('game page', 'trailer is not directly below the hero');
-  if (gameUi.live !== 'Available now' || gameUi.soon !== 'Coming later') fail('game page', 'multiplayer availability labels missing');
+  // online rooms are a beta until the Blaze plan is live (owner decision D3, Oct 16): never "Available now" again before that
+  if (gameUi.labels !== 'Beta|Coming later') fail('game page', `multiplayer availability labels: ${gameUi.labels}`);
   await ctx.close();
 }
 

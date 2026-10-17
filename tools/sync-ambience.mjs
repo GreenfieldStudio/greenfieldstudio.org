@@ -33,6 +33,7 @@ const DIR = join(SITE, 'assets', 'media', 'ambience', 'films');
 const DB = join(DIR, 'films.json');
 const PAGE = join(SITE, 'ambience', 'index.html');
 const PRIVACY = join(SITE, 'privacy', 'index.html');
+const WALLPAPERS = join(SITE, 'wallpapers', 'index.html');
 const CFG = join(SITE, 'tools', 'film-pages.json'); // hand-written: per-film facts a description can't prove (the repeat check)
 
 mkdirSync(DIR, { recursive: true });
@@ -165,6 +166,8 @@ const putAt = (text, name, body, indent) => {
 };
 html = putAt(html, 'signup', signupSection('../'), '    ');
 const privacyBefore = readFileSync(PRIVACY, 'utf8');
+const wallpapersBefore = readFileSync(WALLPAPERS, 'utf8');
+const wallpapersAfter = putAt(wallpapersBefore.replace(/\r\n/g, '\n'), 'signup', signupSection('../'), '    ');
 let privacyAfter = putAt(privacyBefore.replace(/\r\n/g, '\n'), 'signup', privacyBlock(), '        ');
 // while the box is on, the privacy page's date is the day its email paragraph was written (tools/signup.mjs)
 if (privacyDate()) privacyAfter = privacyAfter.replace(/(<b>last updated )\d{4}-\d{2}-\d{2}(<\/b>)/, `$1${privacyDate()}$2`);
@@ -172,6 +175,7 @@ if (CHECK) {
   // compare with line endings ignored: a Windows checkout may hold CRLF
   const problems = html.replace(/\r/g, '') !== before.replace(/\r/g, '') ? ['ambience/index.html differs from films.json'] : [];
   if (privacyAfter.replace(/\r/g, '') !== privacyBefore.replace(/\r/g, '')) problems.push('privacy/index.html differs from tools/signup.mjs');
+  if (wallpapersAfter.replace(/\r/g, '') !== wallpapersBefore.replace(/\r/g, '')) problems.push('wallpapers/index.html differs from tools/signup.mjs');
   problems.push(...syncFilmPages({ site: SITE, db, cfgFile: CFG, check: true }));
   if (problems.length) {
     console.error(`sync-ambience: ${problems.join('; ')}. Run: node tools/sync-ambience.mjs --offline`);
@@ -181,6 +185,7 @@ if (CHECK) {
 }
 writeFileSync(PAGE, matchEol(html, before));
 writeFileSync(PRIVACY, matchEol(privacyAfter, privacyBefore));
+writeFileSync(WALLPAPERS, matchEol(wallpapersAfter, wallpapersBefore));
 syncFilmPages({ site: SITE, db, cfgFile: CFG, check: false });
 // the film pages get the shared menu and footer from tools/sync-chrome.mjs
 const chrome = spawnSync(process.execPath, [join(SITE, 'tools', 'sync-chrome.mjs')], { encoding: 'utf8' });
