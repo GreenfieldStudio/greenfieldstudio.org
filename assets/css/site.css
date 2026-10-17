@@ -269,37 +269,43 @@ section[id] { scroll-margin-top: 92px; }
 .hero .lede { margin: clamp(12px, 2vw, 20px) auto 0; text-align: center; }
 .hero-cta { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 20px; margin-top: 24px; }
 
-.home-hero { text-align: left; padding-block: clamp(38px, 6vw, 82px); }
-.home-hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); grid-template-areas: "copy art" "copy preview"; column-gap: clamp(28px, 5vw, 72px); row-gap: 12px; align-items: center; }
-.home-hero-copy { grid-area: copy; min-width: 0; }
-.home-hero .survey { width: 220px; margin: 0 0 5px; }
+.home-hero { text-align: left; padding-block: clamp(24px, 4vw, 52px) clamp(40px, 6vw, 72px); }
+.home-hero-copy { min-width: 0; max-width: 52em; }
+.home-hero .survey { width: 150px; margin: 0 0 5px; }
 .home-hero .survey-title { display: none; }
 .home-hero .survey--tall { display: none; }
 .home-kicker { color: var(--cream-2); text-transform: uppercase; letter-spacing: 0.1em; }
-.home-hero h1 { font-size: clamp(38px, 4.8vw, 70px); line-height: 1.04; letter-spacing: -0.02em; margin-bottom: 20px; max-width: 11em; }
-.home-hero .lede { margin: 0 0 12px; text-align: left; color: var(--cream); }
-.home-hero .muted { margin-bottom: 0; }
-.home-hero .hero-cta { justify-content: flex-start; margin-top: 26px; }
-.home-proof { margin: 18px 0 0; }
-.home-hero-art { grid-area: art; align-self: end; }
-.home-hero-art img { aspect-ratio: 16 / 11; object-fit: cover; }
-.home-hero-preview { grid-area: preview; align-self: start; }
-.home-hero-preview video { display: block; width: 100%; aspect-ratio: 3 / 1; object-fit: cover; }
+.home-hero h1 { font-size: clamp(36px, 4.6vw, 62px); line-height: 1.04; letter-spacing: -0.02em; margin-bottom: 16px; max-width: 14em; }
+.home-hero .lede { margin: 0; text-align: left; color: var(--cream); }
+/* Watch / Wear / Play: the three doors in the first screen. Plain buttons; brass stays on Play, the one main action. */
+.doors { list-style: none; margin: clamp(22px, 3.4vw, 38px) 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(16px, 2.4vw, 32px); }
+.door { display: flex; flex-direction: column; gap: 6px; min-width: 0; border-top: 1px solid var(--hair-2); padding-top: 14px; }
+.door-media { display: block; margin-bottom: 6px; }
+.door-media img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border: 1px solid var(--hair); border-radius: var(--radius); }
+.door h2 { font-size: clamp(21px, 2vw, 27px); line-height: 1.15; }
+.door p { margin: 0; color: var(--cream-2); font-size: 16px; line-height: 1.5; }
+.door .anno .status { margin-left: 8px; margin-right: 0; padding: 2px 6px; }
+.door .door-act { margin-top: auto; padding-top: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
 .home-cards h3 { font-size: clamp(23px, 2.8vw, 31px); margin: 9px 0 12px; }
 .home-worlds { margin-top: 26px; }
 .home-worlds li { padding-bottom: 12px; }
 @media (max-width: 860px) {
-  .home-hero-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "copy" "preview" "art"; row-gap: clamp(20px, 4vw, 32px); }
-  .home-hero-art { max-width: 700px; }
-  .home-hero-preview { width: min(100%, 700px); }
+  .doors { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .door { display: grid; grid-template-columns: 104px minmax(0, 1fr); column-gap: 14px; row-gap: 4px; align-content: start; }
+  .door-media { grid-row: 1 / span 4; margin: 0; align-self: start; }
+  .door .door-act { padding-top: 6px; }
 }
 @media (max-width: 719px) { .home-hero .survey--tall { display: block; } }
 @media (max-width: 520px) {
   .home-hero { padding-block: 28px 50px; }
-  .home-hero .survey { width: 160px; }
-  .home-hero .hero-cta .btn { width: 100%; }
-  .home-hero-art img { aspect-ratio: 16 / 9; }
-  .home-hero-preview video { aspect-ratio: 16 / 7; }
+  .home-hero .survey { display: none; }
+  .home-hero .lede { font-size: 17px; line-height: 1.45; }
+  .home-hero h1 { margin-bottom: 12px; }
+  .door .btn { min-height: 40px; padding: 8px 14px; font-size: 14px; }
+  .door .door-act { padding-top: 2px; }
+  .door { grid-template-columns: 84px minmax(0, 1fr); }
+  .door p:not(.door-act) { display: none; }
+  .door-media { grid-row: 1 / span 3; }
   .worlds.home-worlds { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .home-worlds li > .anno, .home-worlds li > h3 { margin-inline: 10px; }
   .home-worlds h3 { font-size: 15px; }
