@@ -10,3 +10,22 @@
 /.live/
 /.audit/
 node_modules/
+
+# Secrets, keys and local config: never commit. Also never use `git add -A` here; add files by name.
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*secret*
+*token*
+*credentials*
+*.local.json
+*.local.mjs
+.claude/settings.local.json
+.claude/worktrees/
+# Scratch: session drafts and patch files carry the author's e-mail address in their headers
+/drafts/
+*.patch
+*.log

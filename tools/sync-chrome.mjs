@@ -25,6 +25,7 @@ const PAGES = [
   ['index.html', '', 'home'],
   ['minigolf-pro/index.html', '../', 'minigolf-pro'],
   ['ambience/index.html', '../', 'ambience'],
+  ['wallpapers/index.html', '../', 'wallpapers'],
   ['journal/index.html', '../', 'journal'],
   ['journal/level-critic/index.html', '../../', 'journal'],
   ['journal/coral-reef/index.html', '../../', 'journal'],
@@ -41,7 +42,7 @@ for (const e of existsSync(join(SITE, 'ambience')) ? readdirSync(join(SITE, 'amb
 
 const YT_STUDIO = 'https://www.youtube.com/@Greenfield.Studio';
 const YT_AMBIENCE = 'https://www.youtube.com/@Greenfield.Ambience';
-const ITCH = 'https://greenfieldstudio.itch.io';
+const ITCH = 'https://greenfieldstudio.itch.io/minigolf-pro'; // the game's page: the bare profile has no bio and one game
 
 const ICON = {
   youtube: '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><rect x="1.2" y="3.2" width="13.6" height="9.6" rx="2.6" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M6.6 5.9v4.2L10.2 8z" fill="currentColor"/></svg>',
@@ -54,6 +55,7 @@ function nav(p, section) {
   return `<nav class="nav" aria-label="Main">
         <a href="${p}minigolf-pro/"${cur('minigolf-pro')}>Minigolf Pro</a>
         <a href="${p}ambience/"${cur('ambience')}>Ambience</a>
+        <a href="${p}wallpapers/"${cur('wallpapers')}>Wallpapers</a>
         <a href="${p}journal/"${cur('journal')}>Journal</a>
         <a class="nav-wide" href="${p}#studio">About</a>
         <a class="nav-cta" href="${p}play/?play=1">Play Free</a>
@@ -96,6 +98,7 @@ function footer(p, withStrip) {
           <ul>
             <li><a href="${p}minigolf-pro/">Minigolf Pro</a></li>
             <li><a href="${p}ambience/">Greenfield Ambience</a></li>
+            <li><a href="${p}wallpapers/">Wallpapers</a></li>
             <li><a href="${p}journal/">Journal</a></li>
           </ul>
         </div>
@@ -113,7 +116,7 @@ function footer(p, withStrip) {
           <ul class="footer-social">
             ${ext(YT_STUDIO, 'youtube', 'Greenfield Studio')}
             ${ext(YT_AMBIENCE, 'youtube', 'Greenfield Ambience')}
-            ${ext(ITCH, 'itch', 'itch.io')}
+            ${ext(ITCH, 'itch', 'Minigolf on itch.io')}
           </ul>
         </div>
       </div>

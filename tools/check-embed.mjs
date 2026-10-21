@@ -55,6 +55,9 @@ for (const f of films) {
   if (!poster || !/^\.\.\/\.\.\/assets\/media\//.test(poster.getAttribute('src'))) fail(where, 'poster image is not served from this site');
   else if (!existsSync(join(SITE, 'ambience', f.slug, poster.getAttribute('src')))) fail(where, `poster file missing: ${poster.getAttribute('src')}`);
   if (!/^Play the film: /.test(embed.getAttribute('aria-label') || '')) fail(where, 'poster link has no action name');
+  // WCAG 2.5.3 Label in Name: the visible running time must be part of the link's accessible name
+  const len = embed.querySelector('.film-len')?.textContent.trim();
+  if (len && !(embed.getAttribute('aria-label') || '').includes(len)) fail(where, `poster link label leaves out the visible running time ${len}`);
   if (!embed.querySelector('.film-play')) fail(where, 'no play disc on the poster');
   if (![...document.querySelectorAll('a')].some((a) => a.textContent.trim() === 'Watch on YouTube' && a.href === `https://www.youtube.com/watch?v=${f.id}`)) fail(where, 'no separate "Watch on YouTube" fallback link');
   const chapters = [...document.querySelectorAll('.chapters a[data-start]')];
