@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- R3720 (WCAG 2.1 AA audit, 1.4.4 Resize Text) — dropped
+         `maximum-scale=1.0, user-scalable=no`. Those blocked pinch-zoom
+         outright (honored by Android Chrome, the Capacitor WebView, and the
+         itch.io iframe; Safari ignores them). They were originally carried to
+         stop iOS focus-zoom on form fields, but R2798 solved that separately
+         with the 16px form-control font floor below + its !important twin in
+         the coarse-pointer block, so the lock no longer bought anything.
+         Gameplay is unaffected: the play surface is gesture-locked on its own
+         via `touch-action:none` on the full-screen play overlay and on the
+         portrait canvas — so pinch now works in menus/Settings/editor (where
+         it is needed) and still does not fight aiming. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+    <title>MiniGolf Pro</title>
+
+    <!-- SEO & Social Sharing -->
+    <meta name="description" content="Free physics minigolf — 80 holes across 8 worlds, a full level editor, and online multiplayer. Plays right in your browser." />
+    <meta property="og:title" content="Minigolf Pro" />
+    <meta property="og:description" content="Free physics minigolf — 80 holes across 8 worlds, a full level editor, and online multiplayer. Plays right in your browser." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://greenfieldstudio.org/play/og-image.png" />
+    <meta property="og:url" content="https://greenfieldstudio.org/play/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Minigolf Pro" />
+    <meta name="twitter:description" content="Free physics minigolf — 80 holes across 8 worlds, a full level editor, and online multiplayer. Plays right in your browser." />
+    <meta name="twitter:image" content="https://greenfieldstudio.org/play/og-image.png" />
+
+    <!-- Fonts — SELF-HOSTED (R3799, Poki P-10). This used to load Fredoka from Google
+         Fonts, which is a hard Poki QA fail (Poki blocks ALL Google requests) and was
+         caught by the P-7 initial-download measurement. Fredoka is OFL-licensed; the
+         woff2 subsets in ./fonts/ are byte-identical to the gstatic v17 files, and
+         Fredoka is a VARIABLE font, so one file per subset covers weights 300-700
+         (the old link's 400/600/700 all pointed at the same files). Relative ./fonts/
+         URLs so itch's subdirectory hosting keeps working. -->
+    <style>
+      @font-face { font-family: 'Fredoka'; font-style: normal; font-weight: 300 700; font-display: swap;
+        src: url('./fonts/fredoka-latin.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+      @font-face { font-family: 'Fredoka'; font-style: normal; font-weight: 300 700; font-display: swap;
+        src: url('./fonts/fredoka-latin-ext.woff2') format('woff2');
+        unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+      @font-face { font-family: 'Fredoka'; font-style: normal; font-weight: 300 700; font-display: swap;
+        src: url('./fonts/fredoka-hebrew.woff2') format('woff2');
+        unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F; }
+    </style>
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#FFD93D" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="screen-orientation" content="landscape" />
+    <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+    <link rel="icon" type="image/svg+xml" href="icon.svg" />
+
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { touch-action: manipulation; overscroll-behavior: contain; }
+      body { background: #0a1628; overflow-x: hidden; }
+      @media (min-width: 768px) and (hover: hover) and (pointer: fine) { body { overflow: hidden; } }
+      /* R2798 (mobile Tier 1.5) — iOS Safari zooms the page when a control with
+         font-size < 16px gains focus. A global 16px floor on text inputs / selects
+         kills that focus-zoom unconditionally (was previously only inside a
+         hover:none media query in app code, which missed some surfaces). */
+      input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=color]):not([type=file]),
+      textarea, select { font-size: 16px; }
+
+      /* "Rotate your device" overlay on mobile portrait */
+      #rotate-overlay {
+        display: none; position: fixed; inset: 0; z-index: 99999;
+        background: #0a1628; color: #fff;
+        flex-direction: column; align-items: center; justify-content: center;
+        font-family: 'Fredoka', -apple-system, sans-serif; text-align: center;
+        pointer-events: all; touch-action: none;
+      }
+      #rotate-overlay .icon { font-size: 3rem; margin-bottom: 12px; animation: rotateHint 2s ease-in-out infinite; }
+      @keyframes rotateHint { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(90deg)} }
+      /* R2798 (mobile Tier 1.1) — the overlay is no longer a dead-end. On iOS
+         Safari screen.orientation.lock() is unsupported, so a portrait user could
+         get stuck behind this with no way forward. A "Continue anyway" button lets
+         them proceed (menus + letterboxed play work in portrait); the choice is
+         remembered for the session so it never nags twice. */
+      #rotate-overlay .continue-btn {
+        margin-top: 22px; padding: 12px 28px; min-height: 44px;
+        font-family: inherit; font-size: 1rem; font-weight: 700;
+        color: #0a1628; background: #FFD93D; border: none; border-radius: 12px;
+        cursor: pointer; box-shadow: 0 4px 16px rgba(255,217,61,0.35);
+      }
+      #rotate-overlay .continue-btn:active { transform: scale(0.94); filter: brightness(1.05); }
+
+      /* Splash screen */
+      #splash {
+        position: fixed; inset: 0; z-index: 9999;
+        background: #0a1628;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        color: #e0e8f0;
+      }
+      #splash .logo {
+        width: 48px; height: 48px; margin-bottom: 0.25rem;
+        animation: pulse 2s ease-in-out infinite;
+      }
+      #splash h1 {
+        font-size: 2rem; font-weight: 800;
+        background: linear-gradient(135deg, #FFD93D, #4ECDC4);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        background-clip: text; margin-bottom: 0.5rem;
+      }
+      #splash .tagline {
+        font-size: 0.85rem; opacity: 0.6; margin-bottom: 2rem;
+        letter-spacing: 0.05em;
+      }
+      #splash .bar-track {
+        width: 200px; height: 4px; border-radius: 2px;
+        background: rgba(255,255,255,0.1); overflow: hidden;
+      }
+      #splash .bar-fill {
+        width: 0%; height: 100%; border-radius: 2px;
+        background: linear-gradient(90deg, #FFD93D, #4ECDC4);
+        transition: width 0.3s ease;
+      }
+      /* HUD button touch feedback */
+      button { transition: transform 0.1s ease, filter 0.1s ease; }
+      button:active { transform: scale(0.92); filter: brightness(1.2); }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+      }
+      #splash .studio-byline {
+        display: flex; align-items: center; gap: 6px;
+        font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase;
+        opacity: 0.5; margin-bottom: 1.25rem;
+      }
+      #splash .studio-byline svg { display: block; }
+      /* R2801 (mobile critique R5 #10) — reduced-motion guard for the PRE-React-mount
+         window. The React reduced-motion clamps live inside #root and only take effect
+         after mount; until then a user with OS "Reduce Motion" still saw the infinite
+         rotate-overlay spin + splash-logo pulse (and the rotate overlay is exactly what
+         a portrait user is forced to view). Neutralise them here too. */
+      @media (prefers-reduced-motion: reduce) {
+        #rotate-overlay .icon { animation: none !important; }
+        #splash .logo { animation: none !important; }
+        button { transition: none !important; }
+        button:active, #rotate-overlay .continue-btn:active { transform: none !important; }
+      }
+    </style>
+    <script type="module" crossorigin src="./assets/index-CY8PxjYY.js"></script>
+    <link rel="modulepreload" crossorigin href="./assets/game-data-v6w7PsDU.js">
+    <link rel="modulepreload" crossorigin href="./assets/core-shared-CcsSbLso.js">
+    <link rel="modulepreload" crossorigin href="./assets/vendor-BZXzMhe6.js">
+    <link rel="modulepreload" crossorigin href="./assets/social-utils-X_WP-9Pu.js">
+    <link rel="modulepreload" crossorigin href="./assets/game-meta-1AN_UMOx.js">
+    <link rel="modulepreload" crossorigin href="./assets/audio-C09XhuKW.js">
+    <link rel="modulepreload" crossorigin data-warm-chunk href="./assets/MenuView-BZ4PXy86.js">
+    <link rel="modulepreload" crossorigin data-warm-chunk href="./assets/enRest-BEqvZ6D6.js">
+    <link rel="modulepreload" crossorigin data-warm-chunk href="./assets/MenuModals-DyU0Pde7.js">
+    <link rel="modulepreload" crossorigin data-warm-chunk href="./assets/WorldCovers-C7GO0QiF.js">
+    <link rel="modulepreload" crossorigin data-warm-chunk href="./assets/simTargets-7saCUne_.js">
+    <link rel="modulepreload" crossorigin data-warm-chunk href="./assets/MiniHolePreview-4IspkNax.js">
+    <link rel="modulepreload" crossorigin data-warm-chunk href="./assets/showcaseHoles-COWymaIT.js">
+    <link rel="modulepreload" crossorigin data-warm-chunk href="./assets/aiTraitProfiles-Bg9lMR7w.js">
+    <link rel="modulepreload" crossorigin data-warm-chunk href="./assets/Button-4QrmSOTV.js">
+    <link rel="modulepreload" crossorigin data-warm-chunk href="./assets/magnetSprite-uc7ahGox.js">
+    <link rel="stylesheet" crossorigin href="./assets/index-DRzpmfOI.css">
+    <link rel="canonical" href="https://greenfieldstudio.org/play/" />
+  </head>
+  <body>
+    <!-- Splash screen: visible immediately, removed when React mounts -->
+    <div id="splash" data-mg-modal="splash">
+      <div class="studio-byline" aria-label="A Greenfield Studio game"><svg width="16" height="16" viewBox="0 0 100 100" aria-hidden="true"><defs><radialGradient id="ssg" cx="0.42" cy="0.38" r="0.62"><stop offset="0%" stop-color="#FFE873"/><stop offset="100%" stop-color="#FFD93D"/></radialGradient></defs><circle cx="50" cy="36" r="13" fill="url(#ssg)"/><path d="M 0 66 Q 25 38 100 60 L 100 100 L 0 100 Z" fill="#5BA85F"/><path d="M 4 64.8 Q 25 36.8 96 59.2" fill="none" stroke="#A8DDB5" stroke-width="2.6" stroke-linecap="round"/><path d="M 0 92 Q 72 54 100 78 L 100 100 L 0 100 Z" fill="#2D7A3E"/></svg><span>A Greenfield Studio game</span></div>
+      <div class="logo"><svg width="48" height="48" viewBox="0 0 48 48"><defs><linearGradient id="ss" x1="0" y1=".5" x2="1" y2=".5"><stop offset="0%" stop-color="#FFD93D"/><stop offset="100%" stop-color="#4ECDC4"/></linearGradient></defs><path d="M 6 32 Q 12 8 36 18" fill="none" stroke="url(#ss)" stroke-width="3" stroke-linecap="round"/><circle cx="26.4" cy="21.6" r="12" fill="#fff"/><circle cx="24" cy="20" r="1.5" fill="rgba(0,0,0,.08)"/><circle cx="30" cy="19" r="1.5" fill="rgba(0,0,0,.08)"/><circle cx="27" cy="26" r="1.5" fill="rgba(0,0,0,.08)"/><circle cx="23" cy="17" r="2.2" fill="rgba(255,255,255,.5)"/></svg></div>
+      <h1>MiniGolf Pro</h1>
+      <p class="tagline">Small ball. Big course. All skill.</p>
+      <div class="bar-track"><div class="bar-fill"></div></div>
+      <p id="splash-label" style="font-size:0.7rem;opacity:0.4;margin-top:0.5rem;">Loading...</p>
+    </div>
+    <script>
+      window._splashProgress=function(pct,label){
+        var f=document.querySelector('#splash .bar-fill');
+        var l=document.getElementById('splash-label');
+        if(f)f.style.width=pct+'%';
+        if(l)l.textContent=label||'';
+      };
+      window._splashProgress(10,'Loading...');
+    </script>
+
+    <div id="rotate-overlay">
+      <div class="icon">&#x1F4F1;</div>
+      <div id="rotate-title" style="font-size:1.3rem;font-weight:700;margin-bottom:8px">Rotate Your Device</div>
+      <div id="rotate-body" style="font-size:0.9rem;opacity:0.6;max-width:280px">Landscape gives you the best view &mdash; turn your phone sideways.</div>
+      <button id="rotate-dismiss" class="continue-btn" type="button">Continue anyway</button>
+    </div>
+    <script>
+      // R4046 — the rotate overlay renders BEFORE the app (and its i18n) exists,
+      // so it carries its own five-locale micro-dictionary. On Poki mobile web
+      // this overlay is a mainline first-contact surface for a globally
+      // localized portal; it was English-only while the game behind it
+      // localizes from navigator.language (i18n.js does the same resolution).
+      (function(){
+        try{
+          var L={
+            de:['Gerät drehen','Quer sieht es am besten aus — dreh dein Handy zur Seite.','Trotzdem fortfahren'],
+            fr:['Tournez votre appareil','Le paysage offre la meilleure vue — tournez votre téléphone.','Continuer quand même'],
+            zh:['请旋转设备','横屏体验最佳 — 请将手机横过来。','仍然继续'],
+            'pt-BR':['Gire o dispositivo','Paisagem dá a melhor visão — vire o celular de lado.','Continuar mesmo assim']
+          };
+          var lang=(navigator.language||'en');
+          var k=lang==='pt-BR'||lang.toLowerCase().indexOf('pt')===0?'pt-BR':(lang.slice(0,2));
+          var d=L[k]||L[lang];
+          if(d){
+            document.getElementById('rotate-title').textContent=d[0];
+            document.getElementById('rotate-body').textContent=d[1];
+            document.getElementById('rotate-dismiss').textContent=d[2];
+          }
+        }catch(e){}
+      })();
+    </script>
+    <div id="root"></div>
+    <!-- Analytics: uncomment and set domain when ready -->
+    <!-- <script defer data-domain="yourdomain.com" src="https://plausible.io/js/script.js"></script> -->
+    <script>
+      // Show "Rotate" overlay on touch devices when portrait.
+      // R2798 (mobile Tier 1.1) — now dismissible + portrait-aware:
+      //   • "Continue anyway" remembers the choice for the session (mgp_dismissRotate)
+      //     so an iOS user (no orientation.lock) is never trapped.
+      //   • window.__mgPortraitOK is set by the app when Portrait Play (beta) is on,
+      //     so the overlay never fights a deliberate portrait session.
+      (function(){
+        var isMob = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        if (!isMob) return;
+        var el = document.getElementById('rotate-overlay');
+        if (!el) return;
+        // R3847 - the overlay may not appear until the APP has said it wants landscape.
+        // It used to show whenever `__mgPortraitOK !== true`, and that flag is published by
+        // React (minigolf.jsx ~7091) - so for the whole of a cold load it is `undefined` and a
+        // portrait-held phone stared at a full-screen "Rotate Your Device" wall over the
+        // loading splash. On slow-3G that is the entire ~24s time-to-playable window, on the
+        // majority of a portal's traffic, in a build where `_portraitPlay` DEFAULTS TO TRUE
+        // (state.js:1681, R2840) - so the instruction was not merely early, it was unnecessary.
+        // Worse, tapping "Continue anyway" just to see the loading screen burned
+        // `mgp_dismissRotate` for the whole session, spending the escape hatch on a prompt that
+        // should never have been raised.
+        // A local latch, NOT a seeded `__mgPortraitOK = true`: that flag is the app's channel
+        // and writing a value into it here would be asserting something we do not know. If the
+        // app never mounts, the overlay simply never shows - correct, because the crash screen
+        // owns that surface. Every post-mount behaviour is byte-unchanged.
+        var appSpoke = false;
+        var dismissed = false;
+        try { dismissed = sessionStorage.getItem('mgp_dismissRotate') === '1'; } catch (e) {}
+        // R2827 — orientation source of truth. Inside the itch.io iframe on Android the
+        // iframe viewport does NOT reflow when the device physically rotates, so
+        // innerWidth/innerHeight stay stuck and the overlay never clears (user trapped on
+        // first launch). Prefer the DEVICE orientation (screen.orientation.type, then the
+        // legacy window.orientation), which DO update inside iframes; fall back to the
+        // dimension compare only when neither API exists (old desktop browsers).
+        function isPortraitNow() {
+          try {
+            if (screen.orientation && typeof screen.orientation.type === 'string') {
+              return screen.orientation.type.indexOf('portrait') === 0;
+            }
+          } catch (e) {}
+          if (typeof window.orientation === 'number') {
+            return window.orientation === 0 || window.orientation === 180;
+          }
+          return window.innerHeight > window.innerWidth;
+        }
+        // R3639 — a hard, session-persistent local override. Once set, check()
+        // ALWAYS hides the overlay regardless of orientation / app portrait state.
+        function check() {
+          var hide = dismissed || !isPortraitNow() || window.__mgPortraitOK === true || !appSpoke;/* R3847 - see the latch above */
+          el.style.display = hide ? 'none' : 'flex';
+        }
+        var btn = document.getElementById('rotate-dismiss');
+        // R3639 — "Continue anyway" was firing on `click` only. Inside the itch.io
+        // cross-origin iframe on mobile (fullscreen + `touch-action:none` ancestors),
+        // the synthetic click after a tap is unreliable, so the button appeared dead
+        // ("pressing continue anyway does nothing"). Bind the dismiss to touchend +
+        // pointerup + click and de-dupe — it fires on the FIRST touch release, and the
+        // action is idempotent so a later duplicate is harmless. preventDefault on the
+        // touch/pointer path stops the ghost click from re-toggling anything.
+        function doDismiss(e) {
+          if (e) { try { e.preventDefault(); e.stopPropagation(); } catch (_) {} }
+          if (dismissed) return;
+          dismissed = true;
+          try { sessionStorage.setItem('mgp_dismissRotate', '1'); } catch (e2) {}
+          el.style.display = 'none';
+        }
+        if (btn) {
+          btn.addEventListener('click', doDismiss);
+          btn.addEventListener('touchend', doDismiss, { passive: false });
+          btn.addEventListener('pointerup', doDismiss);
+        }
+        check();
+        window.addEventListener('resize', check);
+        // Re-check when the app toggles Portrait Play so the overlay clears instantly.
+        // R3847 - this event is also what OPENS the latch: it is dispatched from the app's own
+        // render (minigolf.jsx ~7091) the first time it publishes __mgPortraitOK, so it is
+        // exactly the moment "the app has an opinion" becomes true.
+        window.addEventListener('mgp-portrait-change', function () { appSpoke = true; check(); });
+        if (screen.orientation) screen.orientation.addEventListener('change', check);
+        // R2827 — also re-check on orientationchange, plus a deferred pass: some Android
+        // browsers fire the event before the (fallback) dimensions settle.
+        window.addEventListener('orientationchange', function(){ check(); setTimeout(check, 300); });
+      })();
+    </script>
+  <!-- Cloudflare Web Analytics --><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "bc80bb6c81b24ed5aa45abbd6d09985b", "spa": false}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>
