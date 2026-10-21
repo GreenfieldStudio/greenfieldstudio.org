@@ -1,0 +1,19 @@
+{
+  "_readme": "Hand-written. Films that are planned but not public yet (no YouTube id), shown as text-only 'coming soon' entries under the films on /ambience/ by tools/sync-ambience.mjs. 'live' = the planned go-live time with its UTC offset; an entry drops off by itself on the first sync after that time (the daily workflow lists the public film from the feed instead). Name only sounds and sights confirmed in the film's launch pack; no loop or repeat wording (the tool refuses it) and no health claims. 'specs' must be the planned master's real format.",
+  "films": [
+    {
+      "title": "Castle at Night",
+      "live": "2026-10-30T19:00:00+07:00",
+      "specs": ["10 h", "4K", "60 fps", "no music"],
+      "text": "A fantasy castle at night, made for sleep. Owls and nightingales call from the forest, the river runs past to the waterfall and the wind moves through the trees. The pink and teal trees glow and the castle windows stay lit.",
+      "_source": "castle-wallpaper/launch/NIGHT-LAUNCH-PACK-DRAFT.md section 0 (sound log and frames of test_v2, Oct 20). Not named until confirmed in the master: the dragon. Never: bell, music, crickets, fireflies, lanterns."
+    },
+    {
+      "title": "Christmas Cabin",
+      "live": "2026-11-06T19:00:00+07:00",
+      "specs": ["3 h", "4K", "60 fps", "no music"],
+      "text": "A cozy Christmas cabin in the mountains. A fire burns in the stone fireplace, the Christmas tree glows with lights above wrapped presents, and a ginger cat lies curled on the sheepskin by the hearth. Beyond the tall windows lie snowy mountains.",
+      "_source": "KNOWLEDGE/WINTER-LAUNCH-PACK-DRAFT.md (Oct 19 V3 look clip) and greenfield-ambient/MARKETING.md section 9. Winter Cabin 3 h. Not named until its gate passes: falling snow (weather log), crackling and any other sound (soundtrack check), a sleeping cat (not provable). The clock and the hour bell are off in this film."
+    }
+  ]
+}

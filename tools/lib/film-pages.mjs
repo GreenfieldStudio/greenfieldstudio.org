@@ -78,7 +78,7 @@ function specs(f) {
  * sentence that still makes the claim is dropped.
  */
 // every form: loop, loops, looped, looping, loop-free, seamless loop; repeat(s/ing/ed), never-repeating, non-repeating, no repeats
-const LOOP_WORDS = /\bloop(?:s|ed|ing)?\b|\brepeat(?:s|ed|ing)?\b|\bnever (?:see|hear) the same\b/i;
+export const LOOP_WORDS = /\bloop(?:s|ed|ing)?\b|\brepeat(?:s|ed|ing)?\b|\bnever (?:see|hear) the same\b/i;
 // last resort for a title: the claim words themselves
 const LOOP_STRIP = /\b(?:seamless\s+|endless\s+)?(?:no\s+|never[- ]|non[- ])?(?:loop|repeat)(?:s|ed|ing)?(?:[- ]free)?\b/gi;
 export function softenLoops(text) {
@@ -124,7 +124,7 @@ export const firstLine = (f, soften) => {
  * description does ("relaxation and stress relief" becomes "relaxation"; a list item that is only a
  * health claim is dropped). Applied to every film, whatever its repeat-check record.
  */
-const HEALTH_WORDS = /\b(?:stress|anxiety|insomnia|depress\w*|therap\w*|heal(?:s|ing)?|cures?|treatments?)\b/i;
+export const HEALTH_WORDS = /\b(?:stress|anxiety|insomnia|depress\w*|therap\w*|heal(?:s|ing)?|cures?|treatments?)\b/i;
 export function noHealth(item) {
   const t = item.replace(/\s+(?:and|&)\s+(?:stress|anxiety)(?:\s+relief)?\b/i, '').replace(/\b(?:stress|anxiety)\s+relief\s+(?:and|&)\s+/i, '').trim();
   return HEALTH_WORDS.test(t) ? '' : t;
