@@ -12,7 +12,7 @@
  * Checks: HTTP status · console + page errors · third-party requests · bytes transferred
  * (at `load`, i.e. before anyone presses Play) · horizontal overflow at 360 px · images
  * without alt · heading order · every internal link/asset resolves · contrast of the
- * palette's text pairs (WCAG AA).
+ * palette's text pairs (WCAG AA) · share tags (canonical, og:*) · scrollable boxes reachable by keyboard.
  */
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync } from 'node:fs';
@@ -163,6 +163,13 @@ for (const vp of VIEWPORTS) {
         urls: [...urls],
         title: document.title,
         desc: document.querySelector('meta[name="description"]')?.content || '',
+        canonical: document.querySelector('link[rel="canonical"]')?.getAttribute('href') || '',
+        noShare: ['og:title', 'og:description', 'og:url', 'og:image'].filter((k) => !document.querySelector(`meta[property="${k}"]`)?.content),
+        ogUrl: document.querySelector('meta[property="og:url"]')?.content || '',
+        // a box that scrolls sideways must take keyboard focus, or a keyboard user cannot read the rest (WCAG 2.1.1)
+        stuckScroll: [...document.querySelectorAll('pre, .scroll-x, [style*="overflow"]')]
+          .filter((e) => e.scrollWidth > e.clientWidth + 1 && !/^(visible|hidden|clip)$/.test(getComputedStyle(e).overflowX) && e.tabIndex < 0 && !e.querySelector('a[href], button, input, select, textarea, [tabindex]:not([tabindex^="-"])'))
+          .map((e) => e.tagName.toLowerCase() + (e.className ? '.' + e.className.split(' ')[0] : '')),
         counter: !!document.querySelector(`script[src="${beaconSrc}"]`),
       };
     }, BEACON_SRC);
@@ -171,6 +178,12 @@ for (const vp of VIEWPORTS) {
     if (dom.h1 !== 1) fail(where, `${dom.h1} <h1> elements`);
     if (dom.skip) fail(where, `heading level skipped ${dom.skip}`);
     if (!dom.desc && pg.name !== '404') fail(where, 'no meta description');
+    if (pg.name !== '404') {
+      if (!dom.canonical) fail(where, 'no canonical link');
+      if (dom.noShare.length) fail(where, `share tags missing: ${dom.noShare.join(', ')}`);
+      else if (dom.canonical && dom.ogUrl !== dom.canonical) fail(where, `og:url ${dom.ogUrl} differs from canonical ${dom.canonical}`);
+    }
+    if (dom.stuckScroll.length) fail(where, `scrolls sideways but takes no keyboard focus: ${dom.stuckScroll.join(', ')}`);
     if (COUNTER && !dom.counter) fail(where, 'visitor counter missing (deploy adds it when a token is set)');
     if (!LIVE && dom.counter) fail(where, 'visitor counter in the source page; only tools/deploy.mjs may add it');
 
