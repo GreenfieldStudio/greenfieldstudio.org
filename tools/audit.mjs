@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { loadPlaywright } from './lib/playwright.mjs';
 import { CLOUDFLARE_BEACON_TOKEN, BEACON_SRC, BEACON_HOSTS } from './analytics.mjs';
 import { strictOptions } from './lib/args.mjs';
+import { shareProblems, onBase, findStuckScrollers, SHARE_TAGS } from './lib/page-checks.mjs';
 
 strictOptions(['url', 'shots', 'game', 'base']);
 
@@ -144,7 +145,7 @@ for (const vp of VIEWPORTS) {
     const want = pg.status || 200;
     if (!resp || resp.status() !== want) fail(where, `HTTP ${resp && resp.status()} (want ${want})`);
 
-    const dom = await page.evaluate((beaconSrc) => {
+    const dom = await page.evaluate(([beaconSrc, shareTags]) => {
       const hs = [...document.querySelectorAll('h1,h2,h3,h4,h5,h6')].map((h) => Number(h.tagName[1]));
       let skip = null;
       for (let i = 1; i < hs.length; i++) if (hs[i] > hs[i - 1] + 1) { skip = `h${hs[i - 1]}→h${hs[i]}`; break; }
@@ -165,26 +166,23 @@ for (const vp of VIEWPORTS) {
         title: document.title,
         desc: document.querySelector('meta[name="description"]')?.content || '',
         canonical: document.querySelector('link[rel="canonical"]')?.getAttribute('href') || '',
-        noShare: ['og:title', 'og:description', 'og:url', 'og:image'].filter((k) => !document.querySelector(`meta[property="${k}"]`)?.content),
+        noShare: shareTags.filter((k) => !document.querySelector(`meta[property="${k}"]`)?.content),
         ogUrl: document.querySelector('meta[property="og:url"]')?.content || '',
-        // a box that scrolls sideways must take keyboard focus, or a keyboard user cannot read the rest (WCAG 2.1.1)
-        stuckScroll: [...document.querySelectorAll('pre, .scroll-x, [style*="overflow"]')]
-          .filter((e) => e.scrollWidth > e.clientWidth + 1 && !/^(visible|hidden|clip)$/.test(getComputedStyle(e).overflowX) && e.tabIndex < 0 && !e.querySelector('a[href], button, input, select, textarea, [tabindex]:not([tabindex^="-"])'))
-          .map((e) => e.tagName.toLowerCase() + (e.className ? '.' + e.className.split(' ')[0] : '')),
+        ogImage: document.querySelector('meta[property="og:image"]')?.content || '',
         counter: !!document.querySelector(`script[src="${beaconSrc}"]`),
       };
-    }, BEACON_SRC);
+    }, [BEACON_SRC, SHARE_TAGS]);
+    dom.stuckScroll = await page.evaluate(findStuckScrollers);
+    // the share card's picture is checked with the other links (on the audit's own base when local)
+    if (dom.ogImage) dom.urls.push(onBase(dom.ogImage, BASE));
     if (dom.overflow > 0) fail(where, `horizontal overflow ${dom.overflow}px`);
     if (dom.noAlt.length) fail(where, `img without alt: ${dom.noAlt.join(', ')}`);
     if (dom.h1 !== 1) fail(where, `${dom.h1} <h1> elements`);
     if (dom.skip) fail(where, `heading level skipped ${dom.skip}`);
     if (!dom.desc && pg.name !== '404') fail(where, 'no meta description');
-    if (pg.name !== '404') {
-      if (!dom.canonical) fail(where, 'no canonical link');
-      if (dom.noShare.length) fail(where, `share tags missing: ${dom.noShare.join(', ')}`);
-      else if (dom.canonical && dom.ogUrl !== dom.canonical) fail(where, `og:url ${dom.ogUrl} differs from canonical ${dom.canonical}`);
-    }
-    if (dom.stuckScroll.length) fail(where, `scrolls sideways but takes no keyboard focus: ${dom.stuckScroll.join(', ')}`);
+    // the head is the same at every viewport: report it once
+    if (pg.name !== '404' && vp.name === 'desktop') for (const m of shareProblems({ ...dom, path: pg.path })) fail(where, m);
+    if (dom.stuckScroll.length) fail(where, `scrolls but takes no keyboard focus: ${dom.stuckScroll.join(', ')}`);
     if (COUNTER && !dom.counter) fail(where, 'visitor counter missing (deploy adds it when a token is set)');
     if (!LIVE && dom.counter) fail(where, 'visitor counter in the source page; only tools/deploy.mjs may add it');
 
