@@ -660,6 +660,15 @@ section[id] { scroll-margin-top: 92px; }
 .film h3 { margin: 14px 0 4px; font-size: 18px; font-weight: 500; line-height: 1.35; }
 .film:hover h3 { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
 
+/* planned films (tools/upcoming-films.json): text only, no link until the film is public */
+.upcoming { margin-top: clamp(48px, 6vw, 72px); }
+.upcoming-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+@media (max-width: 720px) { .upcoming-list { grid-template-columns: minmax(0, 1fr); } }
+.upcoming-item { padding: 20px 22px; border: 1px solid var(--hair); }
+.upcoming-item h3 { margin: 8px 0 8px; font-size: 18px; font-weight: 500; line-height: 1.35; }
+.upcoming-item p:not(.anno) { color: var(--cream-2); margin-bottom: 12px; }
+.upcoming-sub { margin-top: 20px; }
+
 /* the studio channel's Shorts: a row of portrait cards */
 .shorts { list-style: none; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 28px 16px; margin-top: 32px; }
 @media (max-width: 860px) { .shorts { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

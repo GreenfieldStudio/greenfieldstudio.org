@@ -11,7 +11,8 @@
  * page requests nothing from YouTube until a film is played), reads its length from the watch page,
  * and records all of it in films.json. Then it rewrites the block between `<!-- films:start -->` /
  * `<!-- films:end -->` in ambience/index.html and the VideoObject data between
- * `<!-- films-ld:start -->` / `-end -->`. The daily GitHub Action (.github/workflows/videos.yml)
+ * `<!-- films-ld:start -->` / `-end -->`, and the planned films of tools/upcoming-films.json between
+ * `<!-- upcoming:start -->` / `-end -->` (each until its go-live time). The daily GitHub Action (.github/workflows/videos.yml)
  * runs this, so a film shows up on the site by itself; run it by hand to see the result sooner.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -19,7 +20,7 @@ import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { strictOptions } from './lib/args.mjs';
 import { readFeed, webp, lengthSeconds, isGone, pruneThumbs, esc, clock, matchEol } from './lib/youtube.mjs';
-import { displayTitle, ensureSlugs, secondsOf, syncFilmPages, softenTitle, firstLine, ownText } from './lib/film-pages.mjs';
+import { displayTitle, ensureSlugs, secondsOf, syncFilmPages, softenTitle, firstLine, ownText, LOOP_WORDS, HEALTH_WORDS } from './lib/film-pages.mjs';
 import { spawnSync } from 'node:child_process';
 import { signupSection, privacyBlock, privacyDate } from './signup.mjs';
 
@@ -35,6 +36,7 @@ const PAGE = join(SITE, 'ambience', 'index.html');
 const PRIVACY = join(SITE, 'privacy', 'index.html');
 const WALLPAPERS = join(SITE, 'wallpapers', 'index.html');
 const CFG = join(SITE, 'tools', 'film-pages.json'); // hand-written: per-film facts a description can't prove (the repeat check)
+const UPCOMING = join(SITE, 'tools', 'upcoming-films.json'); // hand-written: planned films with no public video yet
 
 mkdirSync(DIR, { recursive: true });
 const db = existsSync(DB) ? JSON.parse(readFileSync(DB, 'utf8')) : { films: [] };
@@ -125,6 +127,38 @@ if (db.films.length) {
         </div>`;
 }
 
+// Planned films (tools/upcoming-films.json): text-only "coming soon" entries under the list, no link and no
+// video. Each one drops off on the first run after its go-live time; by then the feed lists the real film.
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+// "Fri Oct 30 · 19:00 GMT+7", in the time zone the entry was written in (so the weekday is computed, never typed)
+const when = (live) => {
+  const [, sign, hh, mm] = /([+-])(\d{2}):(\d{2})$/.exec(live);
+  const off = (sign === '-' ? -1 : 1) * (+hh * 60 + +mm);
+  const t = new Date(Date.parse(live) + off * 60000);
+  const zone = `GMT${sign}${+hh}${+mm ? `:${mm}` : ''}`;
+  return `${DAYS[t.getUTCDay()]} ${MONTHS[t.getUTCMonth()]} ${t.getUTCDate()} · ${String(t.getUTCHours()).padStart(2, '0')}:${String(t.getUTCMinutes()).padStart(2, '0')} ${zone}`;
+};
+const upcoming = (existsSync(UPCOMING) ? JSON.parse(readFileSync(UPCOMING, 'utf8')).films || [] : []).filter((u) => {
+  if (!u.title || !u.text || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?[+-]\d{2}:\d{2}$/.test(u.live || '')) throw new Error(`upcoming-films.json: "${u.title || '?'}" needs a title, a text and a live time with its offset (2026-10-30T19:00:00+07:00)`);
+  const words = [u.title, u.text, ...(u.specs || [])].join('\n');
+  // a planned film has no repeat check on record yet, and nothing on the site promises a health effect
+  if (LOOP_WORDS.test(words)) throw new Error(`upcoming-films.json: "${u.title}" uses loop or repeat wording; a film without a passing repeat check can't say that`);
+  if (HEALTH_WORDS.test(words)) throw new Error(`upcoming-films.json: "${u.title}" makes a health claim`);
+  return Date.parse(u.live) > Date.now();
+}).sort((a, b) => Date.parse(a.live) - Date.parse(b.live));
+const upcomingBlock = upcoming.length ? `<div class="upcoming">
+          <p class="fig"><span>fig. 01b</span> <b>coming soon</b></p>
+          <div class="upcoming-list">
+${upcoming.map((u) => `            <article class="upcoming-item">
+              <p class="anno">${esc(when(u.live))}</p>
+              <h3>${esc(u.title)}</h3>
+              <p>${esc(u.text)}</p>${u.specs?.length ? `\n              <span class="anno">${u.specs.map(esc).join(' · ')}</span>` : ''}
+            </article>`).join('\n')}
+          </div>
+          <p class="upcoming-sub"><a class="link-arrow" href="${CHANNEL}?sub_confirmation=1" rel="noopener">Subscribe on YouTube to see ${upcoming.length === 1 ? 'it' : 'them'} first</a></p>
+        </div>` : '';
+
 const cfg = existsSync(CFG) ? JSON.parse(readFileSync(CFG, 'utf8')) : {};
 const checked = (f) => !!cfg[f.id]?.repeatCheck;
 const ld = db.films.length ? `<script type="application/ld+json">
@@ -157,6 +191,7 @@ const put = (name, body) => {
   html = html.replace(re, (_, a, b) => `${a}${body ? `\n        ${body}` : ''}${b}`);
 };
 put('films', block);
+put('upcoming', upcomingBlock);
 put('films-ld', ld);
 // the optional email box (tools/signup.mjs; empty while switched off) and its paragraph on the privacy page
 const putAt = (text, name, body, indent) => {
@@ -173,7 +208,7 @@ let privacyAfter = putAt(privacyBefore.replace(/\r\n/g, '\n'), 'signup', privacy
 if (privacyDate()) privacyAfter = privacyAfter.replace(/(<b>last updated )\d{4}-\d{2}-\d{2}(<\/b>)/, `$1${privacyDate()}$2`);
 if (CHECK) {
   // compare with line endings ignored: a Windows checkout may hold CRLF
-  const problems = html.replace(/\r/g, '') !== before.replace(/\r/g, '') ? ['ambience/index.html differs from films.json'] : [];
+  const problems = html.replace(/\r/g, '') !== before.replace(/\r/g, '') ? ['ambience/index.html differs from films.json and tools/upcoming-films.json (a planned film past its go-live time drops off)'] : [];
   if (privacyAfter.replace(/\r/g, '') !== privacyBefore.replace(/\r/g, '')) problems.push('privacy/index.html differs from tools/signup.mjs');
   if (wallpapersAfter.replace(/\r/g, '') !== wallpapersBefore.replace(/\r/g, '')) problems.push('wallpapers/index.html differs from tools/signup.mjs');
   problems.push(...syncFilmPages({ site: SITE, db, cfgFile: CFG, check: true }));

@@ -71,6 +71,14 @@ The generated pages carry the shared menu and footer through `sync-chrome` (whic
 the page's readout say `loops: none`. The page text itself mirrors the YouTube description, so a "No Loops"
 sentence there is only as true as the description.
 
+**Films not out yet.** A planned film has no YouTube id, so it gets no page. `tools/upcoming-films.json` (hand-written)
+lists it instead: title, go-live time with its UTC offset, a short text and the planned specs. `sync-ambience` writes
+them as text-only "coming soon" entries under the films (between `<!-- upcoming:start -->` / `-end -->`; the weekday is
+computed from the date) and leaves out each one on the first run after its go-live time, when the feed brings in the
+real film. It refuses loop or repeat wording and health claims there. Name only sounds and sights the film's launch
+pack confirms. Since the entries depend on the clock, `--check` (and the audit) fails after a go-live time until
+`sync-ambience` has run again; the daily workflow does that.
+
 **The email box** (`tools/signup.mjs`) is OFF (`SIGNUP = null`): no box, no privacy paragraph. It is a plain
 `<form method="post">` to a provider's embed address, with no script from the provider and nothing requested
 until the button is pressed. The owner opens the account and sets `SIGNUP` (provider, form address, privacy
