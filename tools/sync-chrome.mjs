@@ -26,6 +26,8 @@ const PAGES = [
   ['minigolf-pro/index.html', '../', 'minigolf-pro'],
   ['ambience/index.html', '../', 'ambience'],
   ['wallpapers/index.html', '../', 'wallpapers'],
+  ['games/index.html', '../', 'games'],
+  ['games/bouncy-delivery/index.html', '../../', 'games'],
   ['journal/index.html', '../', 'journal'],
   ['journal/level-critic/index.html', '../../', 'journal'],
   ['journal/coral-reef/index.html', '../../', 'journal'],

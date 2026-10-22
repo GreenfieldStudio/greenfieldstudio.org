@@ -40,6 +40,8 @@ const PAGES = [
   { path: 'minigolf-pro/', name: 'game' },
   { path: 'ambience/', name: 'ambience' },
   { path: 'wallpapers/', name: 'wallpapers' },
+  { path: 'games/', name: 'games' },
+  { path: 'games/bouncy-delivery/', name: 'game-bouncy-delivery' },
   { path: 'press/', name: 'press' },
   { path: 'privacy/', name: 'privacy' },
   { path: 'journal/', name: 'journal' },
