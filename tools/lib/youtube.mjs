@@ -28,17 +28,18 @@ export async function readFeed(channelId, io = {}) {
   let xml = null;
   for (let i = 0; ; i++) {
     let why;
+    let fatal = null; // a status that is not worth retrying
     try {
       const res = await doFetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`, { headers: UA });
       if (res.ok) { xml = await res.text(); break; }
       why = `HTTP ${res.status}`;
       seen.push(why);
-      if (!RETRY_STATUS(res.status)) throw new Error(`feed ${channelId}: ${why}`);
+      if (!RETRY_STATUS(res.status)) fatal = why;
     } catch (e) {
-      if (/^feed /.test(e.message)) throw e; // a status we do not retry
       why = `network error (${e.message})`;
       seen.push(why);
     }
+    if (fatal) throw new Error(`feed ${channelId}: ${fatal}`);
     if (i >= pauses.length) throw new Error(`feed ${channelId}: ${why} after ${seen.length} tries (${seen.join(', ')})`);
     console.warn(`feed ${channelId}: ${why}; trying again in ${pauses[i] / 1000} s (${i + 2}/${pauses.length + 1})`);
     await sleep(pauses[i]);

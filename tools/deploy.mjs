@@ -158,6 +158,8 @@ if (dirty) console.warn('deploy: note — publishing with uncommitted changes in
 const ref = 'refs/heads/gh-pages';
 const tip = gitOrDie(['ls-remote', '--heads', remote, ref], 'reading gh-pages', SITE).split(/\s+/)[0] || '';
 gitOrDie(['init', '-q', '-b', 'gh-pages']);
+// Whatever happens next (also die()), the scratch repo does not stay behind: it holds the site and FETCH_HEAD names the remote.
+process.on('exit', () => rmSync(join(OUT, '.git'), { recursive: true, force: true }));
 if (tip) {
   // Fetch the tip, move the branch there without touching the files (reset --mixed leaves the working
   // tree = the assembled site), so `add -A` below records the difference to what is live.
@@ -179,5 +181,4 @@ if (!changed) {
   const now = gitOrDie(['ls-remote', '--heads', remote, ref], 'checking gh-pages after the push', SITE).split(/\s+/)[0] || '';
   if (now !== head) die(`the push reported success but gh-pages is ${now || 'missing'}, not ${head}.`);
 }
-rmSync(join(OUT, '.git'), { recursive: true, force: true });
 console.log('deploy: done. GitHub Pages will publish in a minute or two.');

@@ -51,6 +51,13 @@ test('503, 429 and a network error are retried too', async () => {
   assert.equal(s.calls.length, 4);
 });
 
+test('a network error whose text starts with "feed " is still retried', async () => {
+  slept.length = 0;
+  const s = script(new Error('feed socket closed'), reply(200, ATOM));
+  assert.equal((await quiet(() => readFeed('UC1', { fetch: s.fetch, sleep }))).length, 1);
+  assert.equal(s.calls.length, 2);
+});
+
 test('404 every time: gives up after all tries with a message naming each status', async () => {
   slept.length = 0;
   const s = script(reply(404));

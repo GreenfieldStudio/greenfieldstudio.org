@@ -71,7 +71,7 @@ const REFUSE_ALL_HOOK = '#!/bin/sh\necho "GH013: Repository rule violations foun
 
 function deploy(remote, args = ['--push']) {
   const r = spawnSync(process.execPath, [join(SITE, 'tools', 'deploy.mjs'), ...args], {
-    cwd: SITE, encoding: 'utf8', env: { ...ENV, ...(remote ? { DEPLOY_REMOTE: remote } : {}) },
+    cwd: SITE, encoding: 'utf8', env: { ...ENV, ...(remote ? { DEPLOY_REMOTE: remote } : {}) }, timeout: 120000,
   });
   return { code: r.status, out: `${r.stdout}${r.stderr}` };
 }
@@ -175,11 +175,18 @@ test('a remote that refuses the push: exit 1, says so, gh-pages untouched, never
   assert.match(r.out, /GH013/);
   assert.doesNotMatch(r.out, /deploy: done/);
   assert.equal(tip(remote), before);
+  assert.ok(!existsSync(join(SITE, '.deploy', '.git')), 'scratch repo removed after a failed push, too');
 });
 
-test('the push never carries --force (the script text has no force flag or "+" refspec)', () => {
-  const text = readFileSync(join(REAL, 'deploy.mjs'), 'utf8');
-  assert.doesNotMatch(text.replace(/\/\/.*|\/\*[\s\S]*?\*\//g, ''), /--force|-f['"]|\+HEAD|\+refs/);
+// Code lines only (comment-only lines dropped, the harmless rmSync option `force: true` removed).
+const forceIn = (text) => text.split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l))
+  .map((l) => l.replace(/\bforce: true\b/g, '')).filter((l) => /force|['"]-f\w*['"]|['"]\+|`\+|\+HEAD|\+refs/i.test(l));
+test('the push never carries --force (no force flag, "-f" or "+" refspec in the code)', () => {
+  assert.deepEqual(forceIn(readFileSync(join(REAL, 'deploy.mjs'), 'utf8')), []);
+  // and the detector does fire on the usual spellings
+  for (const bad of ["x(['push', '--force', r])", "x(['push', '-f', r])", "x(['push', r, '+HEAD:refs/heads/gh-pages'])", "x(['push', '--force-with-lease'])"]) {
+    assert.equal(forceIn(bad).length, 1, bad);
+  }
 });
 
 test('an unreachable remote fails loudly and the token in its URL never reaches the output', () => {
