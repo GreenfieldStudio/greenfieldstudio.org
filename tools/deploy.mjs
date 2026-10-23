@@ -3,13 +3,16 @@
  * deploy.mjs — publish the site to GitHub Pages.
  *
  *   node tools/deploy.mjs            # dry run: assemble .deploy/ and report what would ship
- *   node tools/deploy.mjs --push     # publish: one orphan commit, force-pushed to origin/gh-pages
+ *   node tools/deploy.mjs --push     # publish: one normal commit on top of origin/gh-pages, fast-forward push
+ *                                    # (nothing is committed when the site is unchanged; never --force)
  *   node tools/deploy.mjs --push --base <dir>   # same, in CI: borrow the game build and press downloads from <dir>,
  *                                    # a checkout of the branch that is already live (see below)
  *
  * `main` holds the SOURCE. The game build (play/) and the press downloads (press/files/,
- * the zip) are generated and never committed there. gh-pages receives exactly one commit
- * per deploy, so the public repo never accumulates a history of 35 MB game builds.
+ * the zip) are generated and never committed there. gh-pages receives at most one commit per
+ * deploy, on top of its current tip (the repo's ruleset now forbids force-pushes and deletion;
+ * before that every deploy was one force-pushed orphan commit). Git stores an unchanged file once,
+ * so only a changed game build adds its 35 MB to the history.
  * Pages must be set to "Deploy from a branch: gh-pages / (root)".
  *
  * CI (.github/workflows/videos.yml) has only `main`, so it has neither generated input. `--base <dir>`
@@ -137,13 +140,44 @@ if (!PUSH) {
 }
 
 // ── publish ─────────────────────────────────────────────────────────────────────
+// A normal commit on top of the current gh-pages tip, pushed as a plain fast-forward. The repo's
+// ruleset on gh-pages refuses force-pushes and deletion, so history is never rewritten: the new
+// commit's tree is exactly the assembled site (files that left the site leave the branch), and
+// nothing is committed when that tree is already what gh-pages holds.
 let remote = process.env.DEPLOY_REMOTE || '';
 if (!remote) { try { remote = git(['remote', 'get-url', 'origin']); } catch (_) { die('no `origin` remote on the site repo. Add one: git remote add origin <url>'); } }
+const shown = remote.replace(/\/\/[^@/]*@/, '//***@');
+// Run git and, on failure, stop with its message, with any token in the URL hidden.
+const gitOrDie = (args, what, cwd = OUT) => {
+  try { return git(args, cwd); } catch (e) {
+    const out = `${e.stderr || ''}${e.stdout || ''}`.trim() || e.message;
+    die(`${what} failed (${shown}):\n${out.split(remote).join(shown).replace(/\/\/[^@/\s]*@/g, '//***@')}`);
+  }
+};
 if (dirty) console.warn('deploy: note — publishing with uncommitted changes in the source tree.');
-git(['init', '-q', '-b', 'gh-pages'], OUT);
-git(['add', '-A'], OUT);
-git(['commit', '-q', '-m', `Deploy site ${src} · game ${game.slice(0, 9)}\n\nPublished by tools/deploy.mjs. Source: main@${src}. Game build: ${game}.`], OUT);
-console.log(`deploy: pushing to ${remote.replace(/\/\/[^@/]*@/, '//***@')} (gh-pages, forced)…`);
-execFileSync('git', ['push', '--force', remote, 'gh-pages'], { cwd: OUT, stdio: 'inherit' });
+const ref = 'refs/heads/gh-pages';
+const tip = gitOrDie(['ls-remote', '--heads', remote, ref], 'reading gh-pages', SITE).split(/\s+/)[0] || '';
+gitOrDie(['init', '-q', '-b', 'gh-pages']);
+if (tip) {
+  // Fetch the tip, move the branch there without touching the files (reset --mixed leaves the working
+  // tree = the assembled site), so `add -A` below records the difference to what is live.
+  gitOrDie(['fetch', '-q', '--no-tags', '--depth=1', remote, ref]);
+  gitOrDie(['reset', '-q', '--mixed', 'FETCH_HEAD']);
+  if (gitOrDie(['rev-parse', 'HEAD']) !== tip) die(`fetched gh-pages is not the tip ${tip} that the remote announced; try again.`);
+}
+gitOrDie(['add', '-A']);
+let changed = true;
+if (tip) { try { git(['diff', '--cached', '--quiet'], OUT); changed = false; } catch (_) { /* exit 1 = there are changes */ } }
+if (!changed) {
+  console.log(`deploy: nothing to publish — gh-pages (${tip.slice(0, 9)}) already holds exactly this site.`);
+} else {
+  gitOrDie(['commit', '-q', '-m', `Deploy site ${src} · game ${game.slice(0, 9)}\n\nPublished by tools/deploy.mjs. Source: main@${src}. Game build: ${game}.`]);
+  console.log(`deploy: pushing to ${shown} (gh-pages, ${tip ? `fast-forward from ${tip.slice(0, 9)}` : 'new branch'})…`);
+  // No --force: if gh-pages moved since the fetch, or the remote refuses, this fails and nothing is lost.
+  gitOrDie(['push', remote, `HEAD:${ref}`], 'push');
+  const head = gitOrDie(['rev-parse', 'HEAD']);
+  const now = gitOrDie(['ls-remote', '--heads', remote, ref], 'checking gh-pages after the push', SITE).split(/\s+/)[0] || '';
+  if (now !== head) die(`the push reported success but gh-pages is ${now || 'missing'}, not ${head}.`);
+}
 rmSync(join(OUT, '.git'), { recursive: true, force: true });
 console.log('deploy: done. GitHub Pages will publish in a minute or two.');

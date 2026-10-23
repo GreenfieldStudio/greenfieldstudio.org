@@ -11,11 +11,38 @@ export const UA = { 'user-agent': 'Mozilla/5.0 (greenfieldstudio.org video sync)
 export const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 export const unxml = (s) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
 
-/** The channel's public feed: [{ id, title, published: 'YYYY-MM-DD', description, short }] newest first. */
-export async function readFeed(channelId) {
-  const res = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`, { headers: UA });
-  if (!res.ok) throw new Error(`feed ${channelId}: HTTP ${res.status}`);
-  const xml = await res.text();
+/* YouTube sometimes answers a valid, public feed URL with HTTP 404 (or 5xx / 429) for a while, mostly to
+   requests from cloud runners: the daily workflow failed with "feed UCelrQ1c...: HTTP 404" on 2026-10-21, -22
+   and -23 at 05:34 UTC, while the same URL answered 200 for runs a few hours later and from the PC. So these
+   statuses and network errors are retried a few times, with growing pauses (5+15+30+60 s), before giving up. */
+const RETRY_STATUS = (s) => s === 404 || s === 429 || s >= 500;
+export const FEED_PAUSES_MS = [5000, 15000, 30000, 60000];
+
+/** The channel's public feed: [{ id, title, published: 'YYYY-MM-DD', description, short }] newest first.
+ *  `io` is for tests: { fetch, sleep, pauses }. A failure after the last try throws, naming every status seen. */
+export async function readFeed(channelId, io = {}) {
+  const doFetch = io.fetch || fetch;
+  const sleep = io.sleep || ((ms) => new Promise((r) => setTimeout(r, ms)));
+  const pauses = io.pauses || FEED_PAUSES_MS;
+  const seen = [];
+  let xml = null;
+  for (let i = 0; ; i++) {
+    let why;
+    try {
+      const res = await doFetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`, { headers: UA });
+      if (res.ok) { xml = await res.text(); break; }
+      why = `HTTP ${res.status}`;
+      seen.push(why);
+      if (!RETRY_STATUS(res.status)) throw new Error(`feed ${channelId}: ${why}`);
+    } catch (e) {
+      if (/^feed /.test(e.message)) throw e; // a status we do not retry
+      why = `network error (${e.message})`;
+      seen.push(why);
+    }
+    if (i >= pauses.length) throw new Error(`feed ${channelId}: ${why} after ${seen.length} tries (${seen.join(', ')})`);
+    console.warn(`feed ${channelId}: ${why}; trying again in ${pauses[i] / 1000} s (${i + 2}/${pauses.length + 1})`);
+    await sleep(pauses[i]);
+  }
   if (!xml.includes('<feed')) throw new Error(`feed ${channelId}: not an Atom feed`);
   return [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)].map(([, e]) => ({
     id: (/<yt:videoId>([^<]+)<\/yt:videoId>/.exec(e) || [])[1],
