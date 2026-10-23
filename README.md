@@ -115,9 +115,17 @@ build is live.
 ## How publishing works
 
 `main` holds the source. The game build and the press downloads are generated and git-ignored.
-`tools/deploy.mjs` assembles everything into `.deploy/` and force-pushes it to the **`gh-pages`**
-branch as a single orphan commit, so the public repo never accumulates a history of 35 MB game
-builds. GitHub Pages serves `gh-pages` (Settings → Pages → Deploy from a branch → `gh-pages` / root).
+`tools/deploy.mjs` assembles everything into `.deploy/`, fetches the current **`gh-pages`** tip, and
+publishes the site as one normal commit on top of it (a plain fast-forward push; never `--force`,
+history is never rewritten). The commit's tree is exactly the assembled site, so `CNAME` and
+`.nojekyll` stay, and files that left the site leave the branch. When the site is identical to what
+`gh-pages` holds, nothing is committed or pushed. A rejected push, a moved branch or an unreachable
+remote ends the script with exit 1 and the git message (the token in `DEPLOY_REMOTE` is hidden).
+The repo's ruleset forbids force-pushes and deletion on `gh-pages` (and `main`), which is why it
+works this way. Git stores an unchanged file once, so the history only grows by what changed; a new
+game build adds its ~35 MB. `npm test` (`tools/check-deploy.mjs`) tests all of this against local bare
+repos; `tools/check-feed.mjs` tests the retry of YouTube's occasional feed 404 (see `readFeed`).
+GitHub Pages serves `gh-pages` (Settings → Pages → Deploy from a branch → `gh-pages` / root).
 
 **The visitor counter** (Cloudflare Web Analytics; no cookies or local storage) is added by deploy,
 not written into the pages: every site page plus `play/index.html` gets the beacon in `.deploy/`
