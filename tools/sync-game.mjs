@@ -29,7 +29,7 @@ const arg = (name, def) => {
 const FROM = resolve(arg('from', join(process.env.MINIGOLF_REPO || join(SITE, '..', 'minigolf-pro'), 'dist')));
 const DEST = join(SITE, 'play');
 const ORIGIN = 'https://greenfieldstudio.org';
-const DESCRIPTION = 'Free physics minigolf — 80 holes across 8 worlds, a full level editor, and online multiplayer. Plays right in your browser.';
+const DESCRIPTION = 'Free physics minigolf — 80 holes across 8 worlds, a full level editor, and online rooms (beta). Plays right in your browser.';
 
 const die = (msg) => { console.error(`sync-game: ${msg}`); process.exit(1); };
 
