@@ -27,8 +27,9 @@ test('a feed that stays 404 throws FeedUnavailableError', async () => {
   } finally { console.warn = w; }
 });
 
-test('a 200 that is not Atom is FeedUnavailableError too', async () => {
-  await assert.rejects(readFeed('UC1', { fetch: async () => reply(200, '<html/>'), sleep: noSleep }), (e) => e instanceof FeedUnavailableError);
+test('permanent errors (403, a 200 that is not Atom) stay hard failures, not FeedUnavailableError', async () => {
+  await assert.rejects(readFeed('UC1', { fetch: async () => reply(403), sleep: noSleep }), (e) => !(e instanceof FeedUnavailableError));
+  await assert.rejects(readFeed('UC1', { fetch: async () => reply(200, '<html/>'), sleep: noSleep }), (e) => !(e instanceof FeedUnavailableError));
 });
 
 test('streak: first outage day is 1; counts earlier down runs; stops at ok; skips cancelled', () => {

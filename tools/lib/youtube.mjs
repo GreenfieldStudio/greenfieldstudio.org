@@ -54,12 +54,12 @@ export async function readFeed(channelId, io = {}) {
       why = `network error (${e.message})`;
       seen.push(why);
     }
-    if (fatal) throw new FeedUnavailableError(`feed ${channelId}: ${fatal}`);
+    if (fatal) throw new Error(`feed ${channelId}: ${fatal}`); // 400/403...: our request is wrong, fail hard
     if (i >= pauses.length) throw new FeedUnavailableError(`feed ${channelId}: ${why} after ${seen.length} tries (${seen.join(', ')})`);
     console.warn(`feed ${channelId}: ${why}; trying again in ${pauses[i] / 1000} s (${i + 2}/${pauses.length + 1})`);
     await sleep(pauses[i]);
   }
-  if (!xml.includes('<feed')) throw new FeedUnavailableError(`feed ${channelId}: not an Atom feed`);
+  if (!xml.includes('<feed')) throw new Error(`feed ${channelId}: not an Atom feed`);
   return [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)].map(([, e]) => ({
     id: (/<yt:videoId>([^<]+)<\/yt:videoId>/.exec(e) || [])[1],
     title: unxml((/<title>([^<]*)<\/title>/.exec(e) || [])[1] || ''),

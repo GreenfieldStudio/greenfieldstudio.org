@@ -53,9 +53,10 @@ jobs:
           done
           echo "down=$down" >> "$GITHUB_OUTPUT"
 
-      # Runs (so it shows as a successful step in the jobs API) only when a feed was down; it fails the run
-      # when that has been so for 3 runs in a row.
+      # Runs (so it shows as a successful step in the jobs API) only when a feed was down. After 3 runs in a
+      # row it sets hard=true; the run is failed by the last step, after the commit and deploy steps.
       - name: Feed unavailable (kept the last good lists)
+        id: streak
         if: steps.sync.outputs.down == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -114,3 +115,10 @@ jobs:
           GIT_COMMITTER_NAME: github-actions[bot]
           GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
         run: node tools/deploy.mjs --push --base .live
+
+      # The feed has been down for 3 runs in a row (see the "Feed unavailable" step): now the run goes red.
+      - name: Fail after 3 days without a readable feed
+        if: always() && steps.streak.outputs.hard == 'true'
+        run: |
+          echo "::error::YouTube feed down 3 runs in a row; see the annotation above."
+          exit 1

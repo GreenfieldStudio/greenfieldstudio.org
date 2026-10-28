@@ -10,6 +10,7 @@
  * way: an older run without the step ends the streak, a cancelled one is skipped.
  */
 import { execFileSync } from 'node:child_process';
+import { appendFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
 export const DOWN_STEP = 'Feed unavailable (kept the last good lists)';
@@ -39,6 +40,7 @@ const gh = (path) => JSON.parse(execFileSync('gh', ['api', path], { encoding: 'u
 async function main() {
   const i = process.argv.indexOf('--threshold');
   const threshold = i > 0 ? Number(process.argv[i + 1]) : 3;
+  if (!Number.isInteger(threshold) || threshold < 1) throw new Error('feed-streak: --threshold needs a whole number of 1 or more');
   const repo = process.env.GITHUB_REPOSITORY;
   const current = process.env.GITHUB_RUN_ID;
   const previous = [];
@@ -58,8 +60,10 @@ async function main() {
   }
   const n = streak(previous);
   if (n >= threshold) {
+    // Not an exit code: the run still has to commit and publish whatever the other feed brought in. The
+    // workflow's last step fails the run when it sees hard=true.
     console.log(`::error title=YouTube feed down ${n} runs in a row::The lists on the site are not being refreshed. Check the feed URL and the channel ids in tools/sync-*.mjs, or add a second source.`);
-    process.exitCode = 1;
+    if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, 'hard=true\n');
   } else {
     console.log(`::warning title=YouTube feed unavailable::Run ${n} of ${threshold} in a row; the last good lists stay on the site.`);
   }
