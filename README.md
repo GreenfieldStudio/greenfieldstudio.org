@@ -93,7 +93,7 @@ same dialog, in a portrait frame. If a new Short has no full-size thumbnail yet 
 (`lowres` in `shorts.json`) and tries again on the next runs; a Short with no thumbnail at all is left off
 until it has one.
 
-**Films and Shorts update themselves.** `.github/workflows/videos.yml` runs every day (05:23 UTC) and
+**Films and Shorts update themselves.** `.github/workflows/videos.yml` runs every day (12:47 UTC) and
 on demand (Actions → Refresh videos → Run workflow; tick "redeploy" to publish with no change). When
 the feeds differ from the committed lists it commits only the generated files (`ambience/index.html`,
 `index.html`, `assets/media/ambience/films/`, `assets/media/shorts/`) straight to `main` as

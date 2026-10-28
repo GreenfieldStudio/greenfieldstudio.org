@@ -8,7 +8,7 @@ name: Refresh videos
 
 on:
   schedule:
-    - cron: '23 5 * * *'   # 05:23 UTC daily; GitHub may start it a little late
+    - cron: '47 12 * * *'  # 12:47 UTC daily (was 05:23: YouTube's feed answered 404/500 at that hour every day); GitHub may start it a little late
   workflow_dispatch:
     inputs:
       redeploy:
