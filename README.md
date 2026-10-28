@@ -93,7 +93,7 @@ same dialog, in a portrait frame. If a new Short has no full-size thumbnail yet 
 (`lowres` in `shorts.json`) and tries again on the next runs; a Short with no thumbnail at all is left off
 until it has one.
 
-**Films and Shorts update themselves.** `.github/workflows/videos.yml` runs every day (05:23 UTC) and
+**Films and Shorts update themselves.** `.github/workflows/videos.yml` runs every day (12:47 UTC) and
 on demand (Actions → Refresh videos → Run workflow; tick "redeploy" to publish with no change). When
 the feeds differ from the committed lists it commits only the generated files (`ambience/index.html`,
 `index.html`, `assets/media/ambience/films/`, `assets/media/shorts/`) straight to `main` as
@@ -105,6 +105,15 @@ means "approved to go live". It refuses to run if any other file changed, and a 
 treated as a bad response, not as "every video was removed". `npm run audit` fails if a page differs
 from its list (`sync-ambience --check`, `sync-shorts --check`). GitHub pauses scheduled workflows
 after 60 days without repository activity; any commit restarts them.
+
+**When YouTube's feed can't be used** (it often answers cloud runners with 404/500; an empty feed counts
+too, see above), the workflow runs `tools/refresh-videos.mjs`, which fails soft: the sync tool stops with
+exit 75 before writing, that list stays as it is, the run prints one `::warning::` line, writes the age of
+the list into the job summary and ends green, so there is no daily failure email. It ends red once a list
+is more than 7 days old (the date is kept per day, so the alert can come up to a day early), or when a sync
+tool fails for any other reason. Each feed's age comes from `tools/videos-last-ok.json`, which the bot
+commits (at most once a day) when that feed was read; with no record for a feed, an outage of it is red.
+`node tools/check-refresh.mjs` (part of `npm test`) tests all of this.
 
 **Updating the game** is always the same three steps: build it in the game repo, `npm run sync-game`,
 then `npm run deploy -- --push`. `sync-game` refuses a Poki or CrazyGames build (their SDKs must not

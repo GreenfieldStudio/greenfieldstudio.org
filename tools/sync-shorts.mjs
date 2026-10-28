@@ -16,7 +16,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { strictOptions } from './lib/args.mjs';
-import { readFeed, webp, pruneThumbs, esc, matchEol } from './lib/youtube.mjs';
+import { readFeed, FeedUnavailableError, feedOutage, webp, pruneThumbs, esc, matchEol } from './lib/youtube.mjs';
 
 strictOptions(['offline', 'check']);
 const CHECK = process.argv.includes('--check');
@@ -47,9 +47,13 @@ async function thumb(id, out) {
 const db = existsSync(DB) ? JSON.parse(readFileSync(DB, 'utf8')) : { shorts: [] };
 
 if (!OFFLINE) {
-  const entries = (await readFeed(CHANNEL_ID)).filter((f) => f.short).slice(0, SHOWN);
-  // A feed with no Shorts at all is far more likely a bad response than every one being removed.
-  if (!entries.length && db.shorts.length) throw new Error('the feed listed no Shorts; refusing to empty the page');
+  // A feed with no Shorts at all is far more likely a bad response than every one being removed. An
+  // unreadable or empty feed ends the run here (exit 75, nothing written): see tools/refresh-videos.mjs.
+  const entries = await readFeed(CHANNEL_ID).then((all) => {
+    const shorts = all.filter((f) => f.short).slice(0, SHOWN);
+    if (!shorts.length && db.shorts.length) throw new FeedUnavailableError('the feed listed no Shorts; refusing to empty the page');
+    return shorts;
+  }).catch(feedOutage);
   const next = [];
   for (const f of entries) {
     const known = db.shorts.find((k) => k.id === f.id);
