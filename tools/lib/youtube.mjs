@@ -18,33 +18,57 @@ export const unxml = (s) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replac
 const RETRY_STATUS = (s) => s === 404 || s === 429 || s >= 500;
 export const FEED_PAUSES_MS = [5000, 15000, 30000, 60000];
 
+/** The feed could not be read (or answered with something that is not a usable feed). The sync tools
+ *  treat this as "keep what we have, try again tomorrow", never as a broken run: see feedOutage and
+ *  tools/refresh-videos.mjs. Any other error is a real fault and stays loud. */
+export class FeedUnavailableError extends Error {
+  constructor(message) { super(message); this.name = 'FeedUnavailableError'; }
+}
+/** Exit status of a sync tool that stopped because the feed was unavailable (EX_TEMPFAIL). Nothing was written. */
+export const FEED_OUTAGE_EXIT = 75;
+/** `await readFeed(id).catch(feedOutage)`: on an outage print one line and exit 75 before anything is written. */
+export async function feedOutage(e) {
+  if (!(e instanceof FeedUnavailableError)) throw e;
+  console.warn(`feed unavailable: ${e.message}`);
+  // let the HTTP client close its socket first: on Windows, Node 24 aborts (libuv assertion) when process.exit()
+  // runs while a fetch connection is still closing, and the exit status would not be 75
+  await new Promise((r) => setTimeout(r, 250));
+  process.exit(FEED_OUTAGE_EXIT);
+}
+
+// Tests only: point the feed at a local server (and skip the pauses). Ignored unless the URL is on 127.0.0.1.
+const feedBase = () => (/^http:\/\/127\.0\.0\.1[:/]/.test(process.env.GS_FEED_BASE || '') ? process.env.GS_FEED_BASE : 'https://www.youtube.com/feeds/videos.xml');
+const testPauses = () => (process.env.GS_FEED_BASE && process.env.GS_FEED_PAUSES_MS ? process.env.GS_FEED_PAUSES_MS.split(',').map(Number) : null);
+
 /** The channel's public feed: [{ id, title, published: 'YYYY-MM-DD', description, short }] newest first.
- *  `io` is for tests: { fetch, sleep, pauses }. A failure after the last try throws, naming every status seen. */
+ *  `io` is for tests: { fetch, sleep, pauses }. A failure after the last try throws a FeedUnavailableError,
+ *  naming every status seen. */
 export async function readFeed(channelId, io = {}) {
   const doFetch = io.fetch || fetch;
   const sleep = io.sleep || ((ms) => new Promise((r) => setTimeout(r, ms)));
-  const pauses = io.pauses || FEED_PAUSES_MS;
+  const pauses = io.pauses || testPauses() || FEED_PAUSES_MS;
   const seen = [];
   let xml = null;
   for (let i = 0; ; i++) {
     let why;
     let fatal = null; // a status that is not worth retrying
     try {
-      const res = await doFetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`, { headers: UA });
+      const res = await doFetch(`${feedBase()}?channel_id=${channelId}`, { headers: UA });
       if (res.ok) { xml = await res.text(); break; }
       why = `HTTP ${res.status}`;
       seen.push(why);
+      try { await res.text(); } catch (_) { /* drain the body so the connection is released before a retry or an exit */ }
       if (!RETRY_STATUS(res.status)) fatal = why;
     } catch (e) {
       why = `network error (${e.message})`;
       seen.push(why);
     }
-    if (fatal) throw new Error(`feed ${channelId}: ${fatal}`);
-    if (i >= pauses.length) throw new Error(`feed ${channelId}: ${why} after ${seen.length} tries (${seen.join(', ')})`);
+    if (fatal) throw new FeedUnavailableError(`feed ${channelId}: ${fatal}`);
+    if (i >= pauses.length) throw new FeedUnavailableError(`feed ${channelId}: ${why} after ${seen.length} tries (${seen.join(', ')})`);
     console.warn(`feed ${channelId}: ${why}; trying again in ${pauses[i] / 1000} s (${i + 2}/${pauses.length + 1})`);
     await sleep(pauses[i]);
   }
-  if (!xml.includes('<feed')) throw new Error(`feed ${channelId}: not an Atom feed`);
+  if (!xml.includes('<feed')) throw new FeedUnavailableError(`feed ${channelId}: not an Atom feed`);
   return [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)].map(([, e]) => ({
     id: (/<yt:videoId>([^<]+)<\/yt:videoId>/.exec(e) || [])[1],
     title: unxml((/<title>([^<]*)<\/title>/.exec(e) || [])[1] || ''),

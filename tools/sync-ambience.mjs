@@ -19,7 +19,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { strictOptions } from './lib/args.mjs';
-import { readFeed, webp, lengthSeconds, isGone, pruneThumbs, esc, clock, matchEol } from './lib/youtube.mjs';
+import { readFeed, FeedUnavailableError, feedOutage, webp, lengthSeconds, isGone, pruneThumbs, esc, clock, matchEol } from './lib/youtube.mjs';
 import { displayTitle, ensureSlugs, secondsOf, syncFilmPages, softenTitle, firstLine, ownText, LOOP_WORDS, HEALTH_WORDS } from './lib/film-pages.mjs';
 import { spawnSync } from 'node:child_process';
 import { signupSection, privacyBlock, privacyDate } from './signup.mjs';
@@ -45,9 +45,13 @@ const slugsAdded = ensureSlugs(db); // a film's slug is set once and never chang
 
 if (!OFFLINE) {
   // A Short on this channel is not a film: this list is the long-form ones.
-  const entries = (await readFeed(CHANNEL_ID)).filter((f) => !f.short);
-  // An empty feed is far more likely a bad response than every film having been removed.
-  if (!entries.length && db.films.length) throw new Error('the feed listed no films; refusing to empty the page');
+  // An empty feed is far more likely a bad response than every film having been removed. An unreadable or
+  // empty feed ends the run here (exit 75, nothing written): tools/refresh-videos.mjs keeps the lists as they are.
+  const entries = await readFeed(CHANNEL_ID).then((all) => {
+    const films = all.filter((f) => !f.short);
+    if (!films.length && db.films.length) throw new FeedUnavailableError('the feed listed no films; refusing to empty the page');
+    return films;
+  }).catch(feedOutage);
 
   for (const f of entries) {
     const known = db.films.find((k) => k.id === f.id) || {};

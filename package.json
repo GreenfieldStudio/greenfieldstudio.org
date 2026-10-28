@@ -10,7 +10,7 @@
     "sync-videos": "node tools/sync-ambience.mjs && node tools/sync-shorts.mjs",
     "media": "node tools/make-media.mjs",
     "icons": "node tools/make-icons.mjs",
-    "test": "node tools/check-feed.mjs && node tools/check-deploy.mjs",
+    "test": "node tools/check-feed.mjs && node tools/check-refresh.mjs && node tools/check-deploy.mjs",
     "deploy": "node tools/deploy.mjs"
   }
 }
