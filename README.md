@@ -125,6 +125,9 @@ The repo's ruleset forbids force-pushes and deletion on `gh-pages` (and `main`),
 works this way. Git stores an unchanged file once, so the history only grows by what changed; a new
 game build adds its ~35 MB. `npm test` (`tools/check-deploy.mjs`) tests all of this against local bare
 repos; `tools/check-feed.mjs` tests the retry of YouTube's occasional feed 404 (see `readFeed`).
+When the feed stays dead after the retries (it did from Oct 21 on, for both channels), the sync tools exit 75, the
+workflow keeps the last good lists and shows a warning annotation, and the run only turns red after 3 runs in a row
+(`tools/feed-streak.mjs`; `tools/check-feed-soft.mjs` tests it).
 GitHub Pages serves `gh-pages` (Settings → Pages → Deploy from a branch → `gh-pages` / root).
 
 **The visitor counter** (Cloudflare Web Analytics; no cookies or local storage) is added by deploy,

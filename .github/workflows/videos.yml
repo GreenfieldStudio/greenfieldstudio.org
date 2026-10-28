@@ -18,6 +18,7 @@ on:
 
 permissions:
   contents: write   # push the refreshed lists to main, and the site to gh-pages
+  actions: read     # tools/feed-streak.mjs reads the earlier runs of this workflow
 
 concurrency:
   group: videos
@@ -39,10 +40,26 @@ jobs:
       - name: ffmpeg (new thumbnails are converted to WebP)
         run: command -v ffmpeg >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg)
 
+      # A feed YouTube will not answer (exit 75 from the sync tool, after its retries) keeps that list as it
+      # is; any other error (a bug, a thumbnail) still fails the run at once.
       - name: Read the feeds and regenerate the lists
+        id: sync
         run: |
-          node tools/sync-ambience.mjs
-          node tools/sync-shorts.mjs
+          down=false
+          for tool in sync-ambience sync-shorts; do
+            rc=0
+            node "tools/$tool.mjs" || rc=$?
+            if [ "$rc" -eq 75 ]; then down=true; elif [ "$rc" -ne 0 ]; then exit "$rc"; fi
+          done
+          echo "down=$down" >> "$GITHUB_OUTPUT"
+
+      # Runs (so it shows as a successful step in the jobs API) only when a feed was down; it fails the run
+      # when that has been so for 3 runs in a row.
+      - name: Feed unavailable (kept the last good lists)
+        if: steps.sync.outputs.down == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node tools/feed-streak.mjs --threshold 3
 
       - name: Check that only generated files changed
         id: diff

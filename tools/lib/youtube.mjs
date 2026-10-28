@@ -18,6 +18,21 @@ export const unxml = (s) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replac
 const RETRY_STATUS = (s) => s === 404 || s === 429 || s >= 500;
 export const FEED_PAUSES_MS = [5000, 15000, 30000, 60000];
 
+/* Since 2026-10-21 the feed has also answered 404/500 for days on end, for both channels and from a home PC
+   too (the channel ids are right: the channel page names the same id). Retrying cannot help then, so the
+   sync tools keep the last good lists and exit with FEED_DOWN_EXIT; the workflow turns that into a warning
+   and fails only after several days in a row (tools/feed-streak.mjs). */
+export const FEED_DOWN_EXIT = 75;
+export class FeedUnavailableError extends Error {}
+
+/** For `await readFeed(...).catch(feedDown)`: a feed that cannot be read ends the run with FEED_DOWN_EXIT
+ *  (nothing has been written yet); any other error (a bug, a thumbnail) is rethrown and stays a hard failure. */
+export function feedDown(e) {
+  if (!(e instanceof FeedUnavailableError)) throw e;
+  console.error(`::warning title=YouTube feed unavailable::${e.message}. Keeping the last good lists.`);
+  process.exit(FEED_DOWN_EXIT);
+}
+
 /** The channel's public feed: [{ id, title, published: 'YYYY-MM-DD', description, short }] newest first.
  *  `io` is for tests: { fetch, sleep, pauses }. A failure after the last try throws, naming every status seen. */
 export async function readFeed(channelId, io = {}) {
@@ -39,12 +54,12 @@ export async function readFeed(channelId, io = {}) {
       why = `network error (${e.message})`;
       seen.push(why);
     }
-    if (fatal) throw new Error(`feed ${channelId}: ${fatal}`);
-    if (i >= pauses.length) throw new Error(`feed ${channelId}: ${why} after ${seen.length} tries (${seen.join(', ')})`);
+    if (fatal) throw new FeedUnavailableError(`feed ${channelId}: ${fatal}`);
+    if (i >= pauses.length) throw new FeedUnavailableError(`feed ${channelId}: ${why} after ${seen.length} tries (${seen.join(', ')})`);
     console.warn(`feed ${channelId}: ${why}; trying again in ${pauses[i] / 1000} s (${i + 2}/${pauses.length + 1})`);
     await sleep(pauses[i]);
   }
-  if (!xml.includes('<feed')) throw new Error(`feed ${channelId}: not an Atom feed`);
+  if (!xml.includes('<feed')) throw new FeedUnavailableError(`feed ${channelId}: not an Atom feed`);
   return [...xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)].map(([, e]) => ({
     id: (/<yt:videoId>([^<]+)<\/yt:videoId>/.exec(e) || [])[1],
     title: unxml((/<title>([^<]*)<\/title>/.exec(e) || [])[1] || ''),
