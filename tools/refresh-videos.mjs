@@ -7,9 +7,9 @@
  * YouTube's feeds often answer a cloud runner with 404/500 for hours or days. Then the sync tools stop
  * with exit 75 before writing anything, and this wrapper keeps the lists as they are, prints one warning
  * line, writes the age of the lists into the job summary and exits 0, so there is no red run and no
- * failure email. It exits 1 when the lists are more than 7 days old (or a sync tool failed for any other
- * reason). "Last successful refresh" is tools/videos-last-ok.json, written (at most once a day) when
- * both feeds were read; it is not part of the site (tools/ is never published).
+ * failure email. It exits 1 when a list is more than 7 days old (or a sync tool failed for any other
+ * reason). "Last successful refresh" is kept per feed in tools/videos-last-ok.json, moved (at most once
+ * a day) whenever that feed was read; it is not part of the site (tools/ is never published).
  */
 import { readFileSync, writeFileSync, appendFileSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
@@ -22,7 +22,10 @@ const STAMP = join(resolve(TOOLS), 'videos-last-ok.json');
 const sync = (script) => async () => spawnSync(process.execPath, [join(TOOLS, script)], { stdio: 'inherit' }).status ?? 1;
 
 const code = await runRefresh({
-  steps: [{ name: 'Greenfield Ambience', run: sync('sync-ambience.mjs') }, { name: 'Greenfield Studio', run: sync('sync-shorts.mjs') }],
+  steps: [
+    { key: 'ambience', name: 'Greenfield Ambience', run: sync('sync-ambience.mjs') },
+    { key: 'shorts', name: 'Greenfield Studio', run: sync('sync-shorts.mjs') },
+  ],
   readStamp: () => (existsSync(STAMP) ? readFileSync(STAMP, 'utf8') : null),
   writeStamp: (text) => writeFileSync(STAMP, text),
   now: Date.now(),

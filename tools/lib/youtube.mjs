@@ -37,8 +37,14 @@ export async function feedOutage(e) {
 }
 
 // Tests only: point the feed at a local server (and skip the pauses). Ignored unless the URL is on 127.0.0.1.
-const feedBase = () => (/^http:\/\/127\.0\.0\.1[:/]/.test(process.env.GS_FEED_BASE || '') ? process.env.GS_FEED_BASE : 'https://www.youtube.com/feeds/videos.xml');
-const testPauses = () => (process.env.GS_FEED_BASE && process.env.GS_FEED_PAUSES_MS ? process.env.GS_FEED_PAUSES_MS.split(',').map(Number) : null);
+export function feedBase(env = process.env) {
+  try {
+    const u = new URL(env.GS_FEED_BASE || '');
+    if (u.protocol === 'http:' && u.hostname === '127.0.0.1' && !u.username && !u.password) return env.GS_FEED_BASE;
+  } catch (_) { /* not a URL: use YouTube */ }
+  return 'https://www.youtube.com/feeds/videos.xml';
+}
+const testPauses = () => (process.env.GS_FEED_PAUSES_MS && feedBase().startsWith('http://127.0.0.1') ? process.env.GS_FEED_PAUSES_MS.split(',').map(Number) : null);
 
 /** The channel's public feed: [{ id, title, published: 'YYYY-MM-DD', description, short }] newest first.
  *  `io` is for tests: { fetch, sleep, pauses }. A failure after the last try throws a FeedUnavailableError,
