@@ -117,7 +117,11 @@ export async function refreshThumb(dir, id, prevSha, io = {}) {
   const convert = io.convert || ffmpegWebp;
   const big = join(dir, `${id}-1280.webp`), small = join(dir, `${id}-640.webp`);
   const have = existsSync(big) && existsSync(small);
-  for (const name of ['maxresdefault', 'sddefault', 'hqdefault']) {
+  const SIZES = ['maxresdefault', 'sddefault', 'hqdefault'];
+  const prevSize = SIZES.indexOf(String(prevSha || '').split(':')[0]); // the stored value is "<size>:<sha1>"; -1 = unknown (older record)
+  for (const name of SIZES) {
+    // a smaller size than the one on record is never swapped in over a good pair (a glitch on maxresdefault)
+    if (have && prevSize >= 0 && SIZES.indexOf(name) > prevSize) return { sha: prevSha, changed: false };
     let buf;
     try {
       const r = await get(`https://i.ytimg.com/vi/${id}/${name}.jpg`, { headers: UA });
@@ -130,7 +134,7 @@ export async function refreshThumb(dir, id, prevSha, io = {}) {
       if (have) return { sha: prevSha, changed: false };
       continue;
     }
-    const sha = createHash('sha1').update(buf).digest('hex');
+    const sha = `${name}:${createHash('sha1').update(buf).digest('hex')}`;
     if (have && sha === prevSha) return { sha, changed: false };
     // write beside the old files first, so a failed second conversion leaves the old pair untouched
     const nb = `${big}.new`, ns = `${small}.new`;

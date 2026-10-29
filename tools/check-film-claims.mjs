@@ -53,6 +53,12 @@ test('gateCfg keeps the entry of a PASS film, and the page shows loops: none', (
   assert.ok(/<dt>loops<\/dt>/.test(renderFilmPage(film, [], cfg[film.id])));
 });
 
+test('sync-ambience reads film-pages.json only through gateCfg (index cards and film pages must agree)', () => {
+  const src = readFileSync(fileURLToPath(new URL('./sync-ambience.mjs', import.meta.url)), 'utf8');
+  const line = src.split('\n').find((l) => /^const cfg = /.test(l));
+  assert.ok(line && /gateCfg\(/.test(line) && /passIdsNear\(/.test(line), `sync-ambience.mjs: ${line}`);
+});
+
 test('passIdsNear reads film-gate-pass.json next to the config', () => {
   assert.deepEqual([...passIdsNear(fileURLToPath(new URL('./film-pages.json', import.meta.url)))], [...pass]);
 });

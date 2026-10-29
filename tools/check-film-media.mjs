@@ -57,7 +57,7 @@ test('a new film gets both sizes and a sha', async () => {
   const d = dir();
   const r = await refreshThumb(d, ID, undefined, { fetch: async () => jpg('one'), convert });
   assert.equal(r.changed, true);
-  assert.match(r.sha, /^[0-9a-f]{40}$/);
+  assert.match(r.sha, /^maxresdefault:[0-9a-f]{40}$/);
   assert.equal(read(d, '1280.webp'), 'one');
   assert.equal(read(d, '640.webp'), 'one');
   rmSync(d, { recursive: true });
@@ -107,6 +107,42 @@ test('a YouTube outage or a failed conversion keeps the files on disk', async ()
   assert.deepEqual(r, { sha: a.sha, changed: false });
   assert.equal(read(d, '1280.webp'), 'one');
   assert.equal(read(d, '640.webp'), 'one');
+  rmSync(d, { recursive: true });
+});
+
+test('a 404 on maxresdefault never swaps a smaller size in over a maxres pair', async () => {
+  const d = dir();
+  const a = await refreshThumb(d, ID, undefined, { fetch: async () => jpg('one'), convert });
+  const r = await refreshThumb(d, ID, a.sha, { fetch: async (u) => (u.includes('maxres') ? bad(404) : jpg('sd')), convert });
+  assert.deepEqual(r, { sha: a.sha, changed: false });
+  assert.equal(read(d, '1280.webp'), 'one');
+  rmSync(d, { recursive: true });
+});
+
+test('a film that only ever had sddefault stays on it, and upgrades when maxresdefault appears', async () => {
+  const d = dir();
+  const sdOnly = async (u) => (u.includes('maxres') ? bad(404) : jpg('sd'));
+  const a = await refreshThumb(d, ID, undefined, { fetch: sdOnly, convert });
+  assert.match(a.sha, /^sddefault:/);
+  assert.equal((await refreshThumb(d, ID, a.sha, { fetch: sdOnly, convert: () => assert.fail('no change') })).changed, false);
+  const b = await refreshThumb(d, ID, a.sha, { fetch: async () => jpg('big'), convert });
+  assert.equal(b.changed, true);
+  assert.equal(read(d, '1280.webp'), 'big');
+  rmSync(d, { recursive: true });
+});
+
+test('the first conversion works but the second fails: old pair untouched, no .new files left, share image kept', async () => {
+  const d = dir();
+  const a = await refreshThumb(d, ID, undefined, { fetch: async () => jpg('one'), convert });
+  writeFileSync(join(d, `${ID}-og.jpg`), 'og');
+  let n = 0;
+  const flaky = (buf, out) => (++n === 2 ? false : convert(buf, out));
+  const r = await refreshThumb(d, ID, a.sha, { fetch: async () => jpg('two'), convert: flaky });
+  assert.equal(r.changed, false);
+  assert.equal(read(d, '1280.webp'), 'one');
+  assert.equal(read(d, '640.webp'), 'one');
+  assert.equal(read(d, 'og.jpg'), 'og');
+  assert.ok(!existsSync(join(d, `${ID}-1280.webp.new`)) && !existsSync(join(d, `${ID}-640.webp.new`)));
   rmSync(d, { recursive: true });
 });
 

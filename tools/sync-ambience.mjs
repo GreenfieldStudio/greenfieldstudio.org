@@ -20,7 +20,7 @@ import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { strictOptions } from './lib/args.mjs';
 import { readFeed, FeedUnavailableError, feedOutage, refreshThumb, lengthSeconds, isGone, pruneThumbs, esc, clock, matchEol } from './lib/youtube.mjs';
-import { displayTitle, ensureSlugs, secondsOf, syncFilmPages, softenTitle, firstLine, ownText, LOOP_WORDS, HEALTH_WORDS } from './lib/film-pages.mjs';
+import { displayTitle, ensureSlugs, secondsOf, syncFilmPages, gateCfg, passIdsNear, softenTitle, firstLine, ownText, LOOP_WORDS, HEALTH_WORDS } from './lib/film-pages.mjs';
 import { spawnSync } from 'node:child_process';
 import { signupSection, privacyBlock, privacyDate } from './signup.mjs';
 
@@ -158,7 +158,7 @@ ${upcoming.map((u) => `            <article class="upcoming-item">
           <p class="upcoming-sub"><a class="link-arrow" href="${CHANNEL}?sub_confirmation=1" rel="noopener">Subscribe on YouTube to see ${upcoming.length === 1 ? 'it' : 'them'} first</a></p>
         </div>` : '';
 
-const cfg = existsSync(CFG) ? JSON.parse(readFileSync(CFG, 'utf8')) : {};
+const cfg = gateCfg(existsSync(CFG) ? JSON.parse(readFileSync(CFG, 'utf8')) : {}, passIdsNear(CFG)); // same PASS-list gate as the film pages
 const checked = (f) => !!cfg[f.id]?.repeatCheck;
 const ld = db.films.length ? `<script type="application/ld+json">
   ${JSON.stringify({
