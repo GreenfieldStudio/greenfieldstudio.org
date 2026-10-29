@@ -1,7 +1,8 @@
 // Shared by tools/sync-ambience.mjs and tools/sync-shorts.mjs: read a channel's public Atom feed
 // (no API key; it lists public videos only, newest first), self-host thumbnails as WebP, and turn a
 // feed's text into HTML-safe strings. Nothing here writes to the site.
-import { writeFileSync, rmSync, readdirSync } from 'node:fs';
+import { writeFileSync, rmSync, readdirSync, existsSync, renameSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -87,13 +88,63 @@ export async function readFeed(channelId, io = {}) {
 
 /** Download a YouTube thumbnail and write it as WebP. `vf` is the ffmpeg filter chain. */
 export async function webp(url, out, vf) {
-  const tmp = join(tmpdir(), `gs-thumb-${process.pid}.jpg`);
   const r = await fetch(url, { headers: UA });
   if (!r.ok) return false;
-  writeFileSync(tmp, Buffer.from(await r.arrayBuffer()));
+  return ffmpegWebp(Buffer.from(await r.arrayBuffer()), out, vf);
+}
+
+/** Convert image bytes to a WebP file with an ffmpeg filter; true when ffmpeg succeeded. */
+export function ffmpegWebp(buf, out, vf) {
+  const tmp = join(tmpdir(), `gs-thumb-${process.pid}.jpg`);
+  writeFileSync(tmp, buf);
   const x = spawnSync('ffmpeg', ['-v', 'error', '-y', '-i', tmp, '-vf', vf, '-c:v', 'libwebp', '-quality', '82', out]);
   rmSync(tmp, { force: true });
   return x.status === 0;
+}
+
+const scaleTo = (w) => `scale=${w}:-2:flags=lanczos`;
+/**
+ * Keep a film's self-hosted thumbnails (1280 and 640 WebP) and its share image in step with YouTube. The
+ * source JPEG is fetched every run and compared by SHA-1 with `prevSha` (kept in films.json): when the owner
+ * changes the thumbnail, or YouTube's larger size appears later, both WebPs are rewritten and the old
+ * `<id>-og.jpg` is deleted so syncFilmPages makes a new one. Comparing the source (not the WebP) keeps a
+ * different ffmpeg build on the PC and on the runner from rewriting files forever. A fetch or convert that
+ * fails keeps what is on disk; only a film with no thumbnail at all throws.
+ * Returns { sha, changed }. `io` is for tests: { fetch, convert(buf, out, vf) }.
+ */
+export async function refreshThumb(dir, id, prevSha, io = {}) {
+  const get = io.fetch || fetch;
+  const convert = io.convert || ffmpegWebp;
+  const big = join(dir, `${id}-1280.webp`), small = join(dir, `${id}-640.webp`);
+  const have = existsSync(big) && existsSync(small);
+  const SIZES = ['maxresdefault', 'sddefault', 'hqdefault'];
+  const prevSize = SIZES.indexOf(String(prevSha || '').split(':')[0]); // the stored value is "<size>:<sha1>"; -1 = unknown (older record)
+  for (const name of SIZES) {
+    // a smaller size than the one on record is never swapped in over a good pair (a glitch on maxresdefault)
+    if (have && prevSize >= 0 && SIZES.indexOf(name) > prevSize) return { sha: prevSha, changed: false };
+    let buf;
+    try {
+      const r = await get(`https://i.ytimg.com/vi/${id}/${name}.jpg`, { headers: UA });
+      if (!r.ok) {
+        if (have && (r.status === 429 || r.status >= 500)) return { sha: prevSha, changed: false }; // an outage must not swap in a smaller size
+        continue;
+      }
+      buf = Buffer.from(await r.arrayBuffer());
+    } catch (_) {
+      if (have) return { sha: prevSha, changed: false };
+      continue;
+    }
+    const sha = `${name}:${createHash('sha1').update(buf).digest('hex')}`;
+    if (have && sha === prevSha) return { sha, changed: false };
+    // write beside the old files first, so a failed second conversion leaves the old pair untouched
+    const nb = `${big}.new`, ns = `${small}.new`;
+    if (!(convert(buf, nb, scaleTo(1280)) && convert(buf, ns, scaleTo(640)))) { rmSync(nb, { force: true }); rmSync(ns, { force: true }); continue; }
+    renameSync(nb, big); renameSync(ns, small);
+    rmSync(join(dir, `${id}-og.jpg`), { force: true });
+    return { sha, changed: true };
+  }
+  if (have) return { sha: prevSha, changed: false };
+  throw new Error(`no thumbnail for ${id}`);
 }
 
 /**

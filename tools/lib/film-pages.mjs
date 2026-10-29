@@ -130,6 +130,9 @@ export function noHealth(item) {
   return HEALTH_WORDS.test(t) ? '' : t;
 }
 
+/** A line that only introduces the chapter list: "Chapters:", "Timestamps", "Jump to:" (short, no times in it). */
+export const CHAPTER_HEADING = /^(?:[\p{L}\p{N} ]{0,24}\b(?:chapters?|timestamps?|timecodes?|time\s*stamps?|contents|jump to|moments)\b[\p{L}\p{N} ]{0,12})[:：-]?\s*$/iu;
+
 /** Split the description into { summary, body: [{p}|{ul}], chapters: [{t, label}] }. `soften`: drop loop claims. */
 export function parseDescription(f, soften = false) {
   const text0 = (f.description || '').replace(/\r/g, '').trim();
@@ -141,7 +144,9 @@ export function parseDescription(f, soften = false) {
   const toSec = (t) => t.split(':').reduce((a, n) => a * 60 + Number(n), 0);
   blocks.forEach((b, i) => {
     const lines = b.split('\n').map((l) => l.trim());
-    if (lines.every((l) => chap.test(l))) { lines.forEach((l) => { const m = chap.exec(l); chapters.push({ s: toSec(m[1]), label: m[2] }); }); return; }
+    // a heading line ("Chapters:", "Timestamps") may sit in the same block as the times, without a blank line between
+    const rest = lines.length > 1 && CHAPTER_HEADING.test(lines[0]) ? lines.slice(1) : lines;
+    if (rest.every((l) => chap.test(l))) { rest.forEach((l) => { const m = chap.exec(l); chapters.push({ s: toSec(m[1]), label: m[2] }); }); return; }
     if (i === 0) return; // the summary, used separately
     if (/https?:\/\/|(^|\s)#\w|(^|\s)@\w/.test(b)) return; // links, hashtags and handles are housekeeping
     const out = [];
@@ -350,13 +355,21 @@ function makeOg(dir, id) {
   return x.status === 0;
 }
 
+/** Ids with a film_gate PASS row (film-gate-pass.json next to the config); none if the file is missing. */
+export const passIdsNear = (cfgFile) => {
+  const p = join(cfgFile, '..', 'film-gate-pass.json');
+  return existsSync(p) ? new Set(JSON.parse(readFileSync(p, 'utf8')).pass || []) : new Set();
+};
+/** Keep only the repeat-check entries of films that are on the PASS list: "No Loops" holds by construction. */
+export const gateCfg = (cfg, pass) => Object.fromEntries(Object.entries(cfg).filter(([id]) => pass.has(id)));
+
 /**
  * Write (or, with check, compare) every film's page, the share images and the sitemap block.
  * Returns the list of problems when checking.
  */
 export function syncFilmPages({ site, db, cfgFile, check }) {
   const dir = join(site, 'assets', 'media', 'ambience', 'films');
-  const cfg = existsSync(cfgFile) ? JSON.parse(readFileSync(cfgFile, 'utf8')) : {};
+  const cfg = gateCfg(existsSync(cfgFile) ? JSON.parse(readFileSync(cfgFile, 'utf8')) : {}, passIdsNear(cfgFile));
   const problems = [];
   const films = db.films.filter((f) => f.slug);
   for (const f of films) {
