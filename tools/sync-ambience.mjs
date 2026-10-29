@@ -19,7 +19,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { strictOptions } from './lib/args.mjs';
-import { readFeed, FeedUnavailableError, feedOutage, webp, lengthSeconds, isGone, pruneThumbs, esc, clock, matchEol } from './lib/youtube.mjs';
+import { readFeed, FeedUnavailableError, feedOutage, refreshThumb, lengthSeconds, isGone, pruneThumbs, esc, clock, matchEol } from './lib/youtube.mjs';
 import { displayTitle, ensureSlugs, secondsOf, syncFilmPages, softenTitle, firstLine, ownText, LOOP_WORDS, HEALTH_WORDS } from './lib/film-pages.mjs';
 import { spawnSync } from 'node:child_process';
 import { signupSection, privacyBlock, privacyDate } from './signup.mjs';
@@ -40,7 +40,6 @@ const UPCOMING = join(SITE, 'tools', 'upcoming-films.json'); // hand-written: pl
 
 mkdirSync(DIR, { recursive: true });
 const db = existsSync(DB) ? JSON.parse(readFileSync(DB, 'utf8')) : { films: [] };
-const scale = (w) => `scale=${w}:-2:flags=lanczos`;
 const slugsAdded = ensureSlugs(db); // a film's slug is set once and never changes: it is its page's address
 
 if (!OFFLINE) {
@@ -61,14 +60,10 @@ if (!OFFLINE) {
     for (const k of ['title', 'description', 'published']) if (!f[k] && known[k]) film[k] = known[k];
     if (!film.title) { console.log(`sync-ambience: ${f.id} has no title in the feed; skipping it this run`); continue; }
     // thumbnails: the largest YouTube has, self-hosted in two sizes
-    if (!existsSync(join(DIR, `${f.id}-1280.webp`))) {
-      let ok = false;
-      for (const name of ['maxresdefault', 'sddefault', 'hqdefault']) {
-        const src = `https://i.ytimg.com/vi/${f.id}/${name}.jpg`;
-        if (await webp(src, join(DIR, `${f.id}-1280.webp`), scale(1280)) && await webp(src, join(DIR, `${f.id}-640.webp`), scale(640))) { ok = true; break; }
-      }
-      if (!ok) throw new Error(`no thumbnail for ${f.id}`);
-    }
+    // (re-read every run: a changed YouTube thumbnail replaces the files and drops the old share image)
+    const th = await refreshThumb(DIR, f.id, known.thumbSha);
+    if (th.sha) film.thumbSha = th.sha;
+    if (th.changed) console.log(`sync-ambience: new thumbnail for ${f.id}`);
     // length: not in the feed. If the watch page can't be read, the card goes up without one and
     // the next run tries again.
     if (!film.seconds) {
