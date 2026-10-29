@@ -1,4 +1,4 @@
 {
-  "_readme": "YouTube ids of films that have a film_gate.py PASS (exit 0) row on the exact master in the studio's KNOWLEDGE/FILM-CLAIMS-REGISTER.md (rung L2, audio A and visual V). Only a film listed here may have an active (non-underscore) entry in tools/film-pages.json, which makes its page say 'loops: none'. tools/check-film-claims.mjs enforces it. Last checked against the register Thu 2026-10-29: no film has a PASS row (Winter Cabin: No Loops NO; Castle Night film_v3: film_gate INCONCLUSIVE; the reef and Halloween films: V missing), so the list is empty. Add an id only together with that PASS row.",
+  "_readme": "YouTube ids of films that have a film_gate.py PASS (exit 0) row on the exact master in the studio's KNOWLEDGE/FILM-CLAIMS-REGISTER.md (rung L2, audio A and visual V). Only a film listed here may have an active (non-underscore) entry in tools/film-pages.json, which makes its page say 'loops: none'. tools/check-film-claims.mjs enforces it. Empty on creation (2026-10-29): no film had a PASS row then. syncFilmPages also ignores film-pages.json entries not listed here. Add an id only together with that PASS row.",
   "pass": []
 }

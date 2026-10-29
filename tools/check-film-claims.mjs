@@ -12,7 +12,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { renderFilmPage } from './lib/film-pages.mjs';
+import { renderFilmPage, gateCfg, passIdsNear } from './lib/film-pages.mjs';
 
 const read = (n) => JSON.parse(readFileSync(fileURLToPath(new URL(n, import.meta.url)), 'utf8'));
 const cfg = read('./film-pages.json');
@@ -41,9 +41,20 @@ test('a page without a repeatCheck entry shows no loop claim', () => {
   assert.ok(!/no loops/i.test(html.replace(/<!--[\s\S]*?-->/g, '')));
 });
 
-test('the guard fails for an entry not on the PASS list', () => {
-  const sim = Object.keys({ ZZZZZZZZZZZ: {} }).filter((id) => !pass.has(id));
-  assert.deepEqual(sim, ['ZZZZZZZZZZZ']);
+test('gateCfg drops a repeatCheck entry that is not on the PASS list, so the page has no claim', () => {
+  const cfg = gateCfg({ [film.id]: { repeatCheck: '2026-10-01' } }, new Set());
+  assert.deepEqual(cfg, {});
+  const html = renderFilmPage(film, [], cfg[film.id]);
+  assert.ok(!/<dt>loops<\/dt>/.test(html) && !/repeat check passed/.test(html));
+});
+
+test('gateCfg keeps the entry of a PASS film, and the page shows loops: none', () => {
+  const cfg = gateCfg({ [film.id]: { repeatCheck: '2026-10-01' } }, new Set([film.id]));
+  assert.ok(/<dt>loops<\/dt>/.test(renderFilmPage(film, [], cfg[film.id])));
+});
+
+test('passIdsNear reads film-gate-pass.json next to the config', () => {
+  assert.deepEqual([...passIdsNear(fileURLToPath(new URL('./film-pages.json', import.meta.url)))], [...pass]);
 });
 
 let failed = 0;

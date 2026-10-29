@@ -350,13 +350,21 @@ function makeOg(dir, id) {
   return x.status === 0;
 }
 
+/** Ids with a film_gate PASS row (film-gate-pass.json next to the config); none if the file is missing. */
+export const passIdsNear = (cfgFile) => {
+  const p = join(cfgFile, '..', 'film-gate-pass.json');
+  return existsSync(p) ? new Set(JSON.parse(readFileSync(p, 'utf8')).pass || []) : new Set();
+};
+/** Keep only the repeat-check entries of films that are on the PASS list: "No Loops" holds by construction. */
+export const gateCfg = (cfg, pass) => Object.fromEntries(Object.entries(cfg).filter(([id]) => pass.has(id)));
+
 /**
  * Write (or, with check, compare) every film's page, the share images and the sitemap block.
  * Returns the list of problems when checking.
  */
 export function syncFilmPages({ site, db, cfgFile, check }) {
   const dir = join(site, 'assets', 'media', 'ambience', 'films');
-  const cfg = existsSync(cfgFile) ? JSON.parse(readFileSync(cfgFile, 'utf8')) : {};
+  const cfg = gateCfg(existsSync(cfgFile) ? JSON.parse(readFileSync(cfgFile, 'utf8')) : {}, passIdsNear(cfgFile));
   const problems = [];
   const films = db.films.filter((f) => f.slug);
   for (const f of films) {
