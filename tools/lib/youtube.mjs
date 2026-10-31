@@ -113,6 +113,25 @@ const scaleTo = (w) => `scale=${w}:-2:flags=lanczos`;
  * Returns { sha, changed }. `io` is for tests: { fetch, convert(buf, out, vf) }.
  */
 export async function refreshThumb(dir, id, prevSha, io = {}) {
+  // A film that was just published can have no thumbnail on i.ytimg.com for a while (or the CDN may fail from a
+  // runner): the 2026-10-31 run died with "no thumbnail for xZO79L1fbLc". Only a film with nothing on disk waits
+  // and retries (5+15+30 s); one that already has files keeps them at once.
+  const pauses = io.pauses || THUMB_PAUSES_MS;
+  const sleep = io.sleep || ((ms) => new Promise((r) => setTimeout(r, ms)));
+  for (let i = 0; ; i++) {
+    const r = await refreshThumbOnce(dir, id, prevSha, io);
+    if (r) return r;
+    if (i >= pauses.length) throw new ThumbnailUnavailableError(id);
+    console.warn(`no thumbnail for ${id} yet; trying again in ${pauses[i] / 1000} s (${i + 2}/${pauses.length + 1})`);
+    await sleep(pauses[i]);
+  }
+}
+export const THUMB_PAUSES_MS = [5000, 15000, 30000];
+/** A new film's thumbnail could not be fetched after every try: the sync tool skips that film this run (see sync-ambience). */
+export class ThumbnailUnavailableError extends Error {
+  constructor(id) { super(`no thumbnail for ${id}`); this.name = 'ThumbnailUnavailableError'; this.videoId = id; }
+}
+async function refreshThumbOnce(dir, id, prevSha, io) {
   const get = io.fetch || fetch;
   const convert = io.convert || ffmpegWebp;
   const big = join(dir, `${id}-1280.webp`), small = join(dir, `${id}-640.webp`);
@@ -144,7 +163,7 @@ export async function refreshThumb(dir, id, prevSha, io = {}) {
     return { sha, changed: true };
   }
   if (have) return { sha: prevSha, changed: false };
-  throw new Error(`no thumbnail for ${id}`);
+  return null;
 }
 
 /**

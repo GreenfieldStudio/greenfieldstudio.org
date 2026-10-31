@@ -156,9 +156,32 @@ test('the 1280 file is taken from maxresdefault, falling back to the next size o
   rmSync(d, { recursive: true });
 });
 
-test('a film with no thumbnail anywhere throws', async () => {
+test('a film with no thumbnail anywhere throws, after the retries', async () => {
   const d = dir();
-  await assert.rejects(refreshThumb(d, ID, undefined, { fetch: async () => bad(404), convert }), /no thumbnail/);
+  const slept = [];
+  let calls = 0;
+  await assert.rejects(
+    refreshThumb(d, ID, undefined, { fetch: async () => { calls++; return bad(404); }, convert, pauses: [1, 2], sleep: async (ms) => { slept.push(ms); } }),
+    (e) => e.name === 'ThumbnailUnavailableError' && /no thumbnail for abcdefghijk/.test(e.message));
+  assert.deepEqual(slept, [1, 2]);
+  assert.equal(calls, 9); // 3 sizes x 3 tries
+  rmSync(d, { recursive: true });
+});
+
+test('a new film whose thumbnail appears on a later try gets it', async () => {
+  const d = dir();
+  let n = 0;
+  const r = await refreshThumb(d, ID, undefined, { fetch: async () => (++n <= 3 ? bad(404) : jpg('late')), convert, pauses: [1, 2], sleep: async () => {} });
+  assert.equal(r.changed, true);
+  assert.equal(read(d, '1280.webp'), 'late');
+  rmSync(d, { recursive: true });
+});
+
+test('a film that already has thumbnails never waits for the retries', async () => {
+  const d = dir();
+  const a = await refreshThumb(d, ID, undefined, { fetch: async () => jpg('one'), convert });
+  const r = await refreshThumb(d, ID, a.sha, { fetch: async () => bad(500), convert, sleep: async () => assert.fail('must not sleep') });
+  assert.equal(r.changed, false);
   rmSync(d, { recursive: true });
 });
 

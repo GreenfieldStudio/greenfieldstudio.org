@@ -19,7 +19,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { strictOptions } from './lib/args.mjs';
-import { readFeed, FeedUnavailableError, feedOutage, refreshThumb, lengthSeconds, isGone, pruneThumbs, esc, clock, matchEol } from './lib/youtube.mjs';
+import { readFeed, FeedUnavailableError, feedOutage, refreshThumb, ThumbnailUnavailableError, lengthSeconds, isGone, pruneThumbs, esc, clock, matchEol } from './lib/youtube.mjs';
 import { displayTitle, ensureSlugs, secondsOf, syncFilmPages, gateCfg, passIdsNear, softenTitle, firstLine, ownText, LOOP_WORDS, HEALTH_WORDS } from './lib/film-pages.mjs';
 import { spawnSync } from 'node:child_process';
 import { signupSection, privacyBlock, privacyDate } from './signup.mjs';
@@ -61,7 +61,14 @@ if (!OFFLINE) {
     if (!film.title) { console.log(`sync-ambience: ${f.id} has no title in the feed; skipping it this run`); continue; }
     // thumbnails: the largest YouTube has, self-hosted in two sizes
     // (re-read every run: a changed YouTube thumbnail replaces the files and drops the old share image)
-    const th = await refreshThumb(DIR, f.id, known.thumbSha);
+    // A film with no thumbnail after the retries stays off the page until tomorrow's run (as sync-shorts does);
+    // it must not fail the whole refresh and block every other film and the deploy.
+    const th = await refreshThumb(DIR, f.id, known.thumbSha).catch((e) => {
+      if (!(e instanceof ThumbnailUnavailableError)) throw e;
+      console.warn(`::warning::sync-ambience: ${e.message}; leaving the film off the page, trying again at the next run`);
+      return null;
+    });
+    if (!th) continue;
     if (th.sha) film.thumbSha = th.sha;
     if (th.changed) console.log(`sync-ambience: new thumbnail for ${f.id}`);
     // length: not in the feed. If the watch page can't be read, the card goes up without one and
