@@ -83,7 +83,26 @@ export async function readFeed(channelId, io = {}) {
     description: unxml((/<media:description>([\s\S]*?)<\/media:description>/.exec(e) || [])[1] || ''),
     // the feed links a Short to /shorts/<id> and everything else to /watch?v=<id>
     short: /<link rel="alternate" href="https:\/\/www\.youtube\.com\/shorts\//.test(e),
+    // <media:statistics views="N"/>; null when the entry carries none
+    views: (() => { const m = /<media:statistics[^>]*\sviews="(\d+)"/.exec(e); return m ? Number(m[1]) : null; })(),
   })).filter((f) => /^[A-Za-z0-9_-]{11}$/.test(f.id || ''));
+}
+
+/**
+ * Feed entries that must not become site pages (WR-121, CEO): an entry whose title is identical to another
+ * entry's title in the same feed (repeated live-stream placeholders), and a "Live:" entry with no views
+ * (views missing or 0). Returns the entries to keep; `log` is told about each skipped one.
+ */
+export function dropDuplicateEntries(entries, log = console.log) {
+  const norm = (t) => String(t || '').trim().replace(/\s+/g, ' ').toLowerCase();
+  const count = new Map();
+  for (const f of entries) if (norm(f.title)) count.set(norm(f.title), (count.get(norm(f.title)) || 0) + 1);
+  return entries.filter((f) => {
+    const dup = norm(f.title) && count.get(norm(f.title)) > 1;
+    const liveNoViews = /^live:/i.test(String(f.title || '').trim()) && !f.views;
+    if (dup || liveNoViews) { log(`sync-ambience: skipped duplicate ${f.id} (${dup ? 'same title as another entry' : 'Live: entry with no views'}): ${f.title}`); return false; }
+    return true;
+  });
 }
 
 /** Download a YouTube thumbnail and write it as WebP. `vf` is the ffmpeg filter chain. */
