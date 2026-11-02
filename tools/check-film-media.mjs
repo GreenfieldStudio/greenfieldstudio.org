@@ -12,7 +12,8 @@ import { mkdtempSync, writeFileSync, readFileSync, existsSync, rmSync } from 'no
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseDescription } from './lib/film-pages.mjs';
-import { refreshThumb } from './lib/youtube.mjs';
+import { spawnSync } from 'node:child_process';
+import { refreshThumb, webpArgs, readFeed, dropDuplicateEntries } from './lib/youtube.mjs';
 
 const tests = [];
 const test = (name, fn) => tests.push([name, fn]);
@@ -160,6 +161,64 @@ test('a film with no thumbnail anywhere throws', async () => {
   const d = dir();
   await assert.rejects(refreshThumb(d, ID, undefined, { fetch: async () => bad(404), convert }), /no thumbnail/);
   rmSync(d, { recursive: true });
+});
+
+// WR-121: refreshThumb writes `<id>-1280.webp.new` first; ffmpeg cannot pick a muxer from ".new", so every
+// first-time thumbnail failed on the runner. The stub converter above hid it.
+test('the ffmpeg arguments name the webp format explicitly (output ends in .new)', () => {
+  const a = webpArgs('in.jpg', 'abc-1280.webp.new', 'scale=1280:-2');
+  assert.equal(a[a.indexOf('-f') + 1], 'webp');
+  assert.equal(a.at(-1), 'abc-1280.webp.new', 'the output file stays last');
+  assert.ok(a.indexOf('-f') < a.length - 1);
+});
+
+test('a new film through refreshThumb with the REAL ffmpeg gets two WebP files (skipped without ffmpeg + libwebp)', async () => {
+  const enc = spawnSync('ffmpeg', ['-hide_banner', '-encoders']);
+  if (enc.error || !String(enc.stdout).includes('libwebp')) { console.log('     (ffmpeg with libwebp not available: skipped)'); return; }
+  const d = dir();
+  try {
+    const src = join(d, 'src.jpg');
+    assert.equal(spawnSync('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc=size=320x180:rate=1', '-frames:v', '1', src]).status, 0);
+    const bytes = readFileSync(src);
+    // no `convert` given: the production converter runs, writing `<id>-1280.webp.new` first
+    const r = await refreshThumb(d, ID, undefined, { fetch: async () => ({ ok: true, status: 200, arrayBuffer: async () => bytes }) });
+    assert.equal(r.changed, true);
+    for (const n of ['1280', '640']) assert.equal(readFileSync(join(d, `${ID}-${n}.webp`)).subarray(8, 12).toString(), 'WEBP');
+    assert.ok(!existsSync(join(d, `${ID}-1280.webp.new`)));
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
+// ---- WR-121 (CEO): repeated live-stream placeholders never become pages
+const entry = (id, title, views) => `<entry><yt:videoId>${id}</yt:videoId><title>${title}</title><published>2026-10-30T10:00:00+00:00</published><link rel="alternate" href="https://www.youtube.com/watch?v=${id}"/><media:group><media:description>d</media:description>${views === undefined ? '' : `<media:community><media:statistics views="${views}"/></media:community>`}</media:group></entry>`;
+const LIVE = 'Live: Cozy Halloween Cabin for Sleep | Storm, Fire &amp; Ghosts, 8 Hours (No Music)';
+const SIX = ['eBGd6AM06wk', 'HQIthFuGVOU', '3vF86qfLk6U', 'TaRwFvEI6RM', 'oeph93s7M7g', 'hrUOqKDu9rI'];
+const feedXml = [
+  ...SIX.map((id) => entry(id, LIVE, 0)),
+  entry('xZO79L1fbLc', 'Castle at Night for Sleep | 10 Hours of Owls &amp; a Passing Dragon', 120),
+  entry('aaaaaaaaaaa', 'Live: Real Stream Title', 40),
+  entry('bbbbbbbbbbb', 'Live: No Stats Yet'),
+].join('\n');
+const readTestFeed = () => readFeed('UCx', { fetch: async () => ({ ok: true, status: 200, text: async () => `<feed>${feedXml}</feed>` }), pauses: [] });
+
+test('readFeed carries the views of an entry, null when the feed has none', async () => {
+  const f = await readTestFeed();
+  assert.equal(f.find((x) => x.id === 'xZO79L1fbLc').views, 120);
+  assert.equal(f.find((x) => x.id === SIX[0]).views, 0);
+  assert.equal(f.find((x) => x.id === 'bbbbbbbbbbb').views, null);
+});
+
+test('the six identical Live: entries yield zero pages; the unique title and a Live: entry with views stay', async () => {
+  const logs = [];
+  const kept = dropDuplicateEntries(await readTestFeed(), (l) => logs.push(l));
+  assert.deepEqual(kept.map((f) => f.id), ['xZO79L1fbLc', 'aaaaaaaaaaa']);
+  assert.equal(logs.length, 7); // 6 duplicates + the Live: entry without views
+  assert.ok(SIX.every((id) => logs.some((l) => l.includes(`skipped duplicate ${id}`))));
+});
+
+test('identical titles are skipped even without "Live:" and even with views; a lone title is kept', () => {
+  const e = (id, title, views) => ({ id, title, views });
+  const kept = dropDuplicateEntries([e('a', 'Rain Night', 50), e('b', ' rain  night ', 60), e('c', 'Other', 1)], () => {});
+  assert.deepEqual(kept.map((f) => f.id), ['c']);
 });
 
 let failed = 0;

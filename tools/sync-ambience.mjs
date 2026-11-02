@@ -19,7 +19,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { strictOptions } from './lib/args.mjs';
-import { readFeed, FeedUnavailableError, feedOutage, refreshThumb, lengthSeconds, isGone, pruneThumbs, esc, clock, matchEol } from './lib/youtube.mjs';
+import { readFeed, dropDuplicateEntries, FeedUnavailableError, feedOutage, refreshThumb, lengthSeconds, isGone, pruneThumbs, esc, clock, matchEol } from './lib/youtube.mjs';
 import { displayTitle, ensureSlugs, secondsOf, syncFilmPages, gateCfg, passIdsNear, softenTitle, firstLine, ownText, LOOP_WORDS, HEALTH_WORDS } from './lib/film-pages.mjs';
 import { spawnSync } from 'node:child_process';
 import { signupSection, privacyBlock, privacyDate } from './signup.mjs';
@@ -49,7 +49,7 @@ if (!OFFLINE) {
   const entries = await readFeed(CHANNEL_ID).then((all) => {
     const films = all.filter((f) => !f.short);
     if (!films.length && db.films.length) throw new FeedUnavailableError('the feed listed no films; refusing to empty the page');
-    return films;
+    return dropDuplicateEntries(films); // repeated "Live:" placeholders never become pages (WR-121)
   }).catch(feedOutage);
 
   for (const f of entries) {
