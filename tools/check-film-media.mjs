@@ -12,7 +12,8 @@ import { mkdtempSync, writeFileSync, readFileSync, existsSync, rmSync } from 'no
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseDescription } from './lib/film-pages.mjs';
-import { refreshThumb } from './lib/youtube.mjs';
+import { spawnSync } from 'node:child_process';
+import { refreshThumb, ffmpegWebp, webpArgs } from './lib/youtube.mjs';
 
 const tests = [];
 const test = (name, fn) => tests.push([name, fn]);
@@ -159,6 +160,26 @@ test('the 1280 file is taken from maxresdefault, falling back to the next size o
 test('a film with no thumbnail anywhere throws', async () => {
   const d = dir();
   await assert.rejects(refreshThumb(d, ID, undefined, { fetch: async () => bad(404), convert }), /no thumbnail/);
+  rmSync(d, { recursive: true });
+});
+
+// WR-121: refreshThumb writes `<id>-1280.webp.new` first; ffmpeg cannot pick a muxer from ".new", so every
+// first-time thumbnail failed on the runner. The stub converter above hid it.
+test('the ffmpeg arguments name the webp format explicitly (output ends in .new)', () => {
+  const a = webpArgs('in.jpg', 'abc-1280.webp.new', 'scale=1280:-2');
+  assert.equal(a[a.indexOf('-f') + 1], 'webp');
+  assert.equal(a.at(-1), 'abc-1280.webp.new', 'the output file stays last');
+  assert.ok(a.indexOf('-f') < a.length - 1);
+});
+
+test('the real ffmpeg converts to a ".webp.new" file (skipped when ffmpeg is not installed)', () => {
+  if (spawnSync('ffmpeg', ['-version']).error) { console.log('     (ffmpeg not on PATH: skipped)'); return; }
+  const d = dir();
+  const src = join(d, 'src.jpg');
+  assert.equal(spawnSync('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc=size=320x180:rate=1', '-frames:v', '1', src]).status, 0);
+  const out = join(d, `${ID}-640.webp.new`);
+  assert.equal(ffmpegWebp(readFileSync(src), out, 'scale=160:-2'), true);
+  assert.equal(readFileSync(out).subarray(8, 12).toString(), 'WEBP');
   rmSync(d, { recursive: true });
 });
 

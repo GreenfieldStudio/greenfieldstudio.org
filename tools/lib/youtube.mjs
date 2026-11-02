@@ -97,10 +97,17 @@ export async function webp(url, out, vf) {
 export function ffmpegWebp(buf, out, vf) {
   const tmp = join(tmpdir(), `gs-thumb-${process.pid}.jpg`);
   writeFileSync(tmp, buf);
-  const x = spawnSync('ffmpeg', ['-v', 'error', '-y', '-i', tmp, '-vf', vf, '-c:v', 'libwebp', '-quality', '82', out]);
+  const x = spawnSync('ffmpeg', webpArgs(tmp, out, vf));
   rmSync(tmp, { force: true });
   return x.status === 0;
 }
+
+/**
+ * ffmpeg arguments for one JPEG -> WebP conversion. `-f webp` is required: refreshThumb writes to
+ * `<id>-1280.webp.new` first, and ffmpeg cannot pick a muxer from a ".new" name ("Unable to choose an
+ * output format"), so every first-time thumbnail failed and stopped the daily refresh (WR-121).
+ */
+export const webpArgs = (input, out, vf) => ['-v', 'error', '-y', '-i', input, '-vf', vf, '-c:v', 'libwebp', '-quality', '82', '-f', 'webp', out];
 
 const scaleTo = (w) => `scale=${w}:-2:flags=lanczos`;
 /**
