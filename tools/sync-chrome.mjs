@@ -34,6 +34,7 @@ const PAGES = [
   ['journal/level-editor/index.html', '../../', 'journal'],
   ['press/index.html', '../', 'press'],
   ['privacy/index.html', '../', 'privacy'],
+  ['licensing/index.html', '../', 'licensing'],
   ['404.html', '/', 'none'],
 ];
 
@@ -109,6 +110,7 @@ function footer(p, withStrip) {
           <ul>
             <li><a href="${root}#studio">About</a></li>
             <li><a href="${p}press/">Press kit</a></li>
+            <li><a href="${p}licensing/">Licensing &amp; custom renders</a></li>
             <li><a href="${root}#contact">Contact</a></li>
             <li><a href="${p}privacy/">Privacy</a></li>
           </ul>
@@ -140,7 +142,7 @@ for (const [file, prefix, section] of PAGES) {
   // write in the file's own line endings (a Windows checkout is CRLF), and compare without them
   const eol = /\r\n/.test(before) ? '\r\n' : '\n';
   const fit = (s) => s.replace(/\r?\n/g, eol);
-  const after = before.replace(navRe, fit(nav(prefix, section))).replace(footRe, fit(footer(prefix, file !== 'ambience/index.html' && file !== '404.html' && file !== 'privacy/index.html')));
+  const after = before.replace(navRe, fit(nav(prefix, section))).replace(footRe, fit(footer(prefix, file !== 'ambience/index.html' && file !== '404.html' && file !== 'privacy/index.html' && file !== 'licensing/index.html')));
   if (after.replace(/\r/g, '') === before.replace(/\r/g, '')) continue;
   stale++;
   if (CHECK) console.error(`out of date: ${file}`);

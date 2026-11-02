@@ -44,6 +44,7 @@ const PAGES = [
   { path: 'games/bouncy-delivery/', name: 'game-bouncy-delivery' },
   { path: 'press/', name: 'press' },
   { path: 'privacy/', name: 'privacy' },
+  { path: 'licensing/', name: 'licensing' },
   { path: 'journal/', name: 'journal' },
   { path: 'journal/level-critic/', name: 'post-level-critic' },
   { path: 'journal/coral-reef/', name: 'post-coral-reef' },
