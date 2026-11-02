@@ -99,6 +99,8 @@ export function ffmpegWebp(buf, out, vf) {
   writeFileSync(tmp, buf);
   const x = spawnSync('ffmpeg', webpArgs(tmp, out, vf));
   rmSync(tmp, { force: true });
+  // say why: a silent false made the WR-121 failure undiagnosable ("no thumbnail" with no cause)
+  if (x.status !== 0) console.error(`ffmpeg webp conversion failed for ${out}: ${x.error ? x.error.message : String(x.stderr || '').trim().slice(0, 300)}`);
   return x.status === 0;
 }
 

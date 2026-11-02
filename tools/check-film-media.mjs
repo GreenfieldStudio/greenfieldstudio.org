@@ -13,7 +13,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseDescription } from './lib/film-pages.mjs';
 import { spawnSync } from 'node:child_process';
-import { refreshThumb, ffmpegWebp, webpArgs } from './lib/youtube.mjs';
+import { refreshThumb, webpArgs } from './lib/youtube.mjs';
 
 const tests = [];
 const test = (name, fn) => tests.push([name, fn]);
@@ -172,15 +172,20 @@ test('the ffmpeg arguments name the webp format explicitly (output ends in .new)
   assert.ok(a.indexOf('-f') < a.length - 1);
 });
 
-test('the real ffmpeg converts to a ".webp.new" file (skipped when ffmpeg is not installed)', () => {
-  if (spawnSync('ffmpeg', ['-version']).error) { console.log('     (ffmpeg not on PATH: skipped)'); return; }
+test('a new film through refreshThumb with the REAL ffmpeg gets two WebP files (skipped without ffmpeg + libwebp)', async () => {
+  const enc = spawnSync('ffmpeg', ['-hide_banner', '-encoders']);
+  if (enc.error || !String(enc.stdout).includes('libwebp')) { console.log('     (ffmpeg with libwebp not available: skipped)'); return; }
   const d = dir();
-  const src = join(d, 'src.jpg');
-  assert.equal(spawnSync('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc=size=320x180:rate=1', '-frames:v', '1', src]).status, 0);
-  const out = join(d, `${ID}-640.webp.new`);
-  assert.equal(ffmpegWebp(readFileSync(src), out, 'scale=160:-2'), true);
-  assert.equal(readFileSync(out).subarray(8, 12).toString(), 'WEBP');
-  rmSync(d, { recursive: true });
+  try {
+    const src = join(d, 'src.jpg');
+    assert.equal(spawnSync('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc=size=320x180:rate=1', '-frames:v', '1', src]).status, 0);
+    const bytes = readFileSync(src);
+    // no `convert` given: the production converter runs, writing `<id>-1280.webp.new` first
+    const r = await refreshThumb(d, ID, undefined, { fetch: async () => ({ ok: true, status: 200, arrayBuffer: async () => bytes }) });
+    assert.equal(r.changed, true);
+    for (const n of ['1280', '640']) assert.equal(readFileSync(join(d, `${ID}-${n}.webp`)).subarray(8, 12).toString(), 'WEBP');
+    assert.ok(!existsSync(join(d, `${ID}-1280.webp.new`)));
+  } finally { rmSync(d, { recursive: true, force: true }); }
 });
 
 let failed = 0;
