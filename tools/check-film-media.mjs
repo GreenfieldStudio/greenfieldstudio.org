@@ -13,7 +13,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseDescription } from './lib/film-pages.mjs';
 import { spawnSync } from 'node:child_process';
-import { refreshThumb, webpArgs, readFeed, dropDuplicateEntries } from './lib/youtube.mjs';
+import { fileURLToPath } from 'node:url';
+import { refreshThumb, refreshThumbSafe, thumbSkipSummary, webpArgs, readFeed, dropDuplicateEntries } from './lib/youtube.mjs';
 
 const tests = [];
 const test = (name, fn) => tests.push([name, fn]);
@@ -161,6 +162,72 @@ test('a film with no thumbnail anywhere throws', async () => {
   const d = dir();
   await assert.rejects(refreshThumb(d, ID, undefined, { fetch: async () => bad(404), convert }), /no thumbnail/);
   rmSync(d, { recursive: true });
+});
+
+// WR-121: one film's thumbnail failure must skip that film for this run, not fail the whole refresh.
+test('refreshThumbSafe: a film with no thumbnail returns failed + a warning instead of throwing', async () => {
+  const d = dir();
+  const warned = [];
+  const w = console.warn; console.warn = (...a) => warned.push(a.join(' '));
+  try {
+    const r = await refreshThumbSafe(d, ID, 'maxresdefault:abc', { fetch: async () => bad(404), convert });
+    assert.equal(r.failed, true);
+    assert.equal(r.changed, false);
+    assert.equal(r.sha, 'maxresdefault:abc', 'the record keeps its old sha');
+    assert.match(r.reason, /no thumbnail/);
+  } finally { console.warn = w; rmSync(d, { recursive: true }); }
+  assert.equal(warned.length, 1);
+  assert.ok(warned[0].includes(ID) && /skipping this film/.test(warned[0]), warned[0]);
+});
+
+test('refreshThumbSafe: a converter that always fails leaves no .new files and does not throw', async () => {
+  const d = dir();
+  const e = console.error, w = console.warn; console.error = () => {}; console.warn = () => {};
+  try {
+    const r = await refreshThumbSafe(d, ID, undefined, { fetch: async () => jpg('one'), convert: () => false });
+    assert.equal(r.failed, true);
+    assert.ok(!existsSync(join(d, `${ID}-1280.webp.new`)) && !existsSync(join(d, `${ID}-1280.webp`)));
+  } finally { console.error = e; console.warn = w; rmSync(d, { recursive: true }); }
+});
+
+test('refreshThumbSafe: a good film passes through unchanged (failed false)', async () => {
+  const d = dir();
+  try {
+    const r = await refreshThumbSafe(d, ID, undefined, { fetch: async () => jpg('one'), convert });
+    assert.equal(r.failed, false);
+    assert.equal(r.changed, true);
+    assert.ok(r.sha.startsWith('maxresdefault:'));
+  } finally { rmSync(d, { recursive: true }); }
+});
+
+test('refreshThumbSafe: an unexpected error (not "no thumbnail") still throws', async () => {
+  const d = dir();
+  try {
+    await assert.rejects(refreshThumbSafe(d, ID, undefined, { fetch: async () => jpg('one'), convert: () => { throw new Error('ENOSPC'); } }), /ENOSPC/);
+  } finally { rmSync(d, { recursive: true }); }
+});
+
+test('thumbSkipSummary: some films skipped warns and passes; every film skipped throws', () => {
+  const w = console.warn; const lines = []; console.warn = (m) => lines.push(m);
+  try {
+    thumbSkipSummary([], 5);
+    assert.equal(lines.length, 0);
+    thumbSkipSummary(['a'], 5);
+    assert.equal(lines.length, 1);
+    assert.match(lines[0], /1 of 5 .*: a/);
+    assert.throws(() => thumbSkipSummary(['a', 'b'], 2), /every film/);
+    thumbSkipSummary([], 0);
+  } finally { console.warn = w; }
+});
+
+test('sync-ambience skips a failed film through refreshThumbSafe (never calls refreshThumb directly)', () => {
+  const src = readFileSync(fileURLToPath(new URL('./sync-ambience.mjs', import.meta.url)), 'utf8');
+  assert.ok(!/\brefreshThumb\(/.test(src), 'sync-ambience must not call the throwing refreshThumb');
+  assert.match(src, /const th = await refreshThumbSafe\(/);
+  assert.match(src, /if \(th\.failed\) \{ skippedThumbs\.push\(f\.id\); continue; \}/);
+  // the denominator is the films that reached the thumbnail step, not every feed entry (an untitled one never does)
+  assert.match(src, /thumbSkipSummary\(skippedThumbs, thumbsTried\);/);
+  assert.ok(src.indexOf('thumbsTried++') > src.indexOf('has no title in the feed') && src.indexOf('thumbsTried++') < src.indexOf('refreshThumbSafe(DIR'));
 });
 
 // WR-121: refreshThumb writes `<id>-1280.webp.new` first; ffmpeg cannot pick a muxer from ".new", so every

@@ -25,6 +25,11 @@ export const FEED_PAUSES_MS = [5000, 15000, 30000, 60000];
 export class FeedUnavailableError extends Error {
   constructor(message) { super(message); this.name = 'FeedUnavailableError'; }
 }
+/** A film has no usable thumbnail (none fetched, or none converted) and none on disk. refreshThumbSafe turns
+ *  exactly this into a skipped film; any other error (disk full, a bug) stays loud. */
+export class ThumbnailUnavailableError extends Error {
+  constructor(message) { super(message); this.name = 'ThumbnailUnavailableError'; }
+}
 /** Exit status of a sync tool that stopped because the feed was unavailable (EX_TEMPFAIL). Nothing was written. */
 export const FEED_OUTAGE_EXIT = 75;
 /** `await readFeed(id).catch(feedOutage)`: on an outage print one line and exit 75 before anything is written. */
@@ -172,7 +177,34 @@ export async function refreshThumb(dir, id, prevSha, io = {}) {
     return { sha, changed: true };
   }
   if (have) return { sha: prevSha, changed: false };
-  throw new Error(`no thumbnail for ${id}`);
+  throw new ThumbnailUnavailableError(`no thumbnail for ${id}`);
+}
+
+/**
+ * refreshThumb for the daily run: a thumbnail that cannot be had for ONE film must not stop the refresh of
+ * every other film and the licensing page deploy behind it (WR-121: one failing film kept the whole site
+ * stale for days). Returns { failed: true, reason } instead of throwing; the caller skips that film this
+ * run (its record and old thumbnails stay as they are) and the next run tries again.
+ */
+export async function refreshThumbSafe(dir, id, prevSha, io = {}) {
+  try {
+    return { ...(await refreshThumb(dir, id, prevSha, io)), failed: false };
+  } catch (e) {
+    if (!(e instanceof ThumbnailUnavailableError)) throw e; // a disk error or a bug is not "this film has no thumbnail"
+    const reason = e.message;
+    console.warn(`WARNING: thumbnail for ${id} failed (${reason}); skipping this film for this run, keeping what is on the site`);
+    return { sha: prevSha, changed: false, failed: true, reason };
+  }
+}
+
+/**
+ * End-of-loop report for refreshThumbSafe: names the skipped films, and throws when ALL of the films failed
+ * (a broken ffmpeg or an image CDN outage, not one bad film), so that case still turns the run red.
+ */
+export function thumbSkipSummary(skippedIds, total) {
+  if (!skippedIds.length) return;
+  console.warn(`WARNING: ${skippedIds.length} of ${total} film(s) skipped this run because of their thumbnail: ${skippedIds.join(', ')}`);
+  if (total > 0 && skippedIds.length >= total) throw new Error(`thumbnails failed for every film (${total}); not publishing a refresh with nothing in it`);
 }
 
 /**

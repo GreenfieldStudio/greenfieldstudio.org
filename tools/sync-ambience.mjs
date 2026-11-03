@@ -19,7 +19,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { strictOptions } from './lib/args.mjs';
-import { readFeed, dropDuplicateEntries, FeedUnavailableError, feedOutage, refreshThumb, lengthSeconds, isGone, pruneThumbs, esc, clock, matchEol } from './lib/youtube.mjs';
+import { readFeed, dropDuplicateEntries, FeedUnavailableError, feedOutage, refreshThumbSafe, thumbSkipSummary, lengthSeconds, isGone, pruneThumbs, esc, clock, matchEol } from './lib/youtube.mjs';
 import { displayTitle, ensureSlugs, secondsOf, syncFilmPages, gateCfg, passIdsNear, softenTitle, firstLine, ownText, LOOP_WORDS, HEALTH_WORDS } from './lib/film-pages.mjs';
 import { spawnSync } from 'node:child_process';
 import { signupSection, privacyBlock, privacyDate } from './signup.mjs';
@@ -52,6 +52,8 @@ if (!OFFLINE) {
     return dropDuplicateEntries(films); // repeated "Live:" placeholders never become pages (WR-121)
   }).catch(feedOutage);
 
+  const skippedThumbs = [];
+  let thumbsTried = 0; // films that got as far as the thumbnail step (an untitled entry never does)
   for (const f of entries) {
     const known = db.films.find((k) => k.id === f.id) || {};
     const film = { ...known, ...f };
@@ -61,7 +63,9 @@ if (!OFFLINE) {
     if (!film.title) { console.log(`sync-ambience: ${f.id} has no title in the feed; skipping it this run`); continue; }
     // thumbnails: the largest YouTube has, self-hosted in two sizes
     // (re-read every run: a changed YouTube thumbnail replaces the files and drops the old share image)
-    const th = await refreshThumb(DIR, f.id, known.thumbSha);
+    thumbsTried++;
+    const th = await refreshThumbSafe(DIR, f.id, known.thumbSha);
+    if (th.failed) { skippedThumbs.push(f.id); continue; } // WR-121: one film's thumbnail problem skips that film this run, never the whole refresh
     if (th.sha) film.thumbSha = th.sha;
     if (th.changed) console.log(`sync-ambience: new thumbnail for ${f.id}`);
     // length: not in the feed. If the watch page can't be read, the card goes up without one and
@@ -72,6 +76,7 @@ if (!OFFLINE) {
     }
     db.films = db.films.filter((k) => k.id !== f.id).concat(film);
   }
+  thumbSkipSummary(skippedThumbs, thumbsTried); // every film failing is a systemic fault (ffmpeg, CDN): fail loudly, nothing written
   // The feed only reaches back ~15 videos, so a film missing from it is not necessarily gone. Ask
   // YouTube about each one before it leaves the site (made private or deleted); otherwise it stays.
   for (const k of db.films.filter((k) => !entries.some((f) => f.id === k.id))) {
