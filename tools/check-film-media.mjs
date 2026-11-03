@@ -14,7 +14,7 @@ import { join } from 'node:path';
 import { parseDescription } from './lib/film-pages.mjs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { refreshThumb, refreshThumbSafe, webpArgs, readFeed, dropDuplicateEntries } from './lib/youtube.mjs';
+import { refreshThumb, refreshThumbSafe, thumbSkipSummary, webpArgs, readFeed, dropDuplicateEntries } from './lib/youtube.mjs';
 
 const tests = [];
 const test = (name, fn) => tests.push([name, fn]);
@@ -200,11 +200,32 @@ test('refreshThumbSafe: a good film passes through unchanged (failed false)', as
   } finally { rmSync(d, { recursive: true }); }
 });
 
+test('refreshThumbSafe: an unexpected error (not "no thumbnail") still throws', async () => {
+  const d = dir();
+  try {
+    await assert.rejects(refreshThumbSafe(d, ID, undefined, { fetch: async () => jpg('one'), convert: () => { throw new Error('ENOSPC'); } }), /ENOSPC/);
+  } finally { rmSync(d, { recursive: true }); }
+});
+
+test('thumbSkipSummary: some films skipped warns and passes; every film skipped throws', () => {
+  const w = console.warn; const lines = []; console.warn = (m) => lines.push(m);
+  try {
+    thumbSkipSummary([], 5);
+    assert.equal(lines.length, 0);
+    thumbSkipSummary(['a'], 5);
+    assert.equal(lines.length, 1);
+    assert.match(lines[0], /1 of 5 .*: a/);
+    assert.throws(() => thumbSkipSummary(['a', 'b'], 2), /every film/);
+    thumbSkipSummary([], 0);
+  } finally { console.warn = w; }
+});
+
 test('sync-ambience skips a failed film through refreshThumbSafe (never calls refreshThumb directly)', () => {
   const src = readFileSync(fileURLToPath(new URL('./sync-ambience.mjs', import.meta.url)), 'utf8');
   assert.ok(!/\brefreshThumb\(/.test(src), 'sync-ambience must not call the throwing refreshThumb');
   assert.match(src, /const th = await refreshThumbSafe\(/);
-  assert.match(src, /if \(th\.failed\) continue;/);
+  assert.match(src, /if \(th\.failed\) \{ skippedThumbs\.push\(f\.id\); continue; \}/);
+  assert.match(src, /thumbSkipSummary\(skippedThumbs, entries\.length\);/);
 });
 
 // WR-121: refreshThumb writes `<id>-1280.webp.new` first; ffmpeg cannot pick a muxer from ".new", so every
