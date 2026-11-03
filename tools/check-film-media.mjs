@@ -225,7 +225,9 @@ test('sync-ambience skips a failed film through refreshThumbSafe (never calls re
   assert.ok(!/\brefreshThumb\(/.test(src), 'sync-ambience must not call the throwing refreshThumb');
   assert.match(src, /const th = await refreshThumbSafe\(/);
   assert.match(src, /if \(th\.failed\) \{ skippedThumbs\.push\(f\.id\); continue; \}/);
-  assert.match(src, /thumbSkipSummary\(skippedThumbs, entries\.length\);/);
+  // the denominator is the films that reached the thumbnail step, not every feed entry (an untitled one never does)
+  assert.match(src, /thumbSkipSummary\(skippedThumbs, thumbsTried\);/);
+  assert.ok(src.indexOf('thumbsTried++') > src.indexOf('has no title in the feed') && src.indexOf('thumbsTried++') < src.indexOf('refreshThumbSafe(DIR'));
 });
 
 // WR-121: refreshThumb writes `<id>-1280.webp.new` first; ffmpeg cannot pick a muxer from ".new", so every

@@ -53,6 +53,7 @@ if (!OFFLINE) {
   }).catch(feedOutage);
 
   const skippedThumbs = [];
+  let thumbsTried = 0; // films that got as far as the thumbnail step (an untitled entry never does)
   for (const f of entries) {
     const known = db.films.find((k) => k.id === f.id) || {};
     const film = { ...known, ...f };
@@ -62,6 +63,7 @@ if (!OFFLINE) {
     if (!film.title) { console.log(`sync-ambience: ${f.id} has no title in the feed; skipping it this run`); continue; }
     // thumbnails: the largest YouTube has, self-hosted in two sizes
     // (re-read every run: a changed YouTube thumbnail replaces the files and drops the old share image)
+    thumbsTried++;
     const th = await refreshThumbSafe(DIR, f.id, known.thumbSha);
     if (th.failed) { skippedThumbs.push(f.id); continue; } // WR-121: one film's thumbnail problem skips that film this run, never the whole refresh
     if (th.sha) film.thumbSha = th.sha;
@@ -74,7 +76,7 @@ if (!OFFLINE) {
     }
     db.films = db.films.filter((k) => k.id !== f.id).concat(film);
   }
-  thumbSkipSummary(skippedThumbs, entries.length); // every film failing is a systemic fault (ffmpeg, CDN): fail loudly, nothing written
+  thumbSkipSummary(skippedThumbs, thumbsTried); // every film failing is a systemic fault (ffmpeg, CDN): fail loudly, nothing written
   // The feed only reaches back ~15 videos, so a film missing from it is not necessarily gone. Ask
   // YouTube about each one before it leaves the site (made private or deleted); otherwise it stays.
   for (const k of db.films.filter((k) => !entries.some((f) => f.id === k.id))) {
