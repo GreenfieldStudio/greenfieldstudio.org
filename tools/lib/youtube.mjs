@@ -176,6 +176,22 @@ export async function refreshThumb(dir, id, prevSha, io = {}) {
 }
 
 /**
+ * refreshThumb for the daily run: a thumbnail that cannot be had for ONE film must not stop the refresh of
+ * every other film and the licensing page deploy behind it (WR-121: one failing film kept the whole site
+ * stale for days). Returns { failed: true, reason } instead of throwing; the caller skips that film this
+ * run (its record and old thumbnails stay as they are) and the next run tries again.
+ */
+export async function refreshThumbSafe(dir, id, prevSha, io = {}) {
+  try {
+    return { ...(await refreshThumb(dir, id, prevSha, io)), failed: false };
+  } catch (e) {
+    const reason = e && e.message ? e.message : String(e);
+    console.warn(`WARNING: thumbnail for ${id} failed (${reason}); skipping this film for this run, keeping what is on the site`);
+    return { sha: prevSha, changed: false, failed: true, reason };
+  }
+}
+
+/**
  * Is this video really gone (deleted or made private)? The feed lists only a channel's newest ~15
  * videos, so "not in the feed" means nothing by itself. oEmbed answers 200 for a public video and
  * 401/403/404 for a private or deleted one. A network error or anything else counts as NOT gone:

@@ -13,7 +13,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseDescription } from './lib/film-pages.mjs';
 import { spawnSync } from 'node:child_process';
-import { refreshThumb, webpArgs, readFeed, dropDuplicateEntries } from './lib/youtube.mjs';
+import { fileURLToPath } from 'node:url';
+import { refreshThumb, refreshThumbSafe, webpArgs, readFeed, dropDuplicateEntries } from './lib/youtube.mjs';
 
 const tests = [];
 const test = (name, fn) => tests.push([name, fn]);
@@ -161,6 +162,49 @@ test('a film with no thumbnail anywhere throws', async () => {
   const d = dir();
   await assert.rejects(refreshThumb(d, ID, undefined, { fetch: async () => bad(404), convert }), /no thumbnail/);
   rmSync(d, { recursive: true });
+});
+
+// WR-121: one film's thumbnail failure must skip that film for this run, not fail the whole refresh.
+test('refreshThumbSafe: a film with no thumbnail returns failed + a warning instead of throwing', async () => {
+  const d = dir();
+  const warned = [];
+  const w = console.warn; console.warn = (...a) => warned.push(a.join(' '));
+  try {
+    const r = await refreshThumbSafe(d, ID, 'maxresdefault:abc', { fetch: async () => bad(404), convert });
+    assert.equal(r.failed, true);
+    assert.equal(r.changed, false);
+    assert.equal(r.sha, 'maxresdefault:abc', 'the record keeps its old sha');
+    assert.match(r.reason, /no thumbnail/);
+  } finally { console.warn = w; rmSync(d, { recursive: true }); }
+  assert.equal(warned.length, 1);
+  assert.ok(warned[0].includes(ID) && /skipping this film/.test(warned[0]), warned[0]);
+});
+
+test('refreshThumbSafe: a converter that always fails leaves no .new files and does not throw', async () => {
+  const d = dir();
+  const e = console.error, w = console.warn; console.error = () => {}; console.warn = () => {};
+  try {
+    const r = await refreshThumbSafe(d, ID, undefined, { fetch: async () => jpg('one'), convert: () => false });
+    assert.equal(r.failed, true);
+    assert.ok(!existsSync(join(d, `${ID}-1280.webp.new`)) && !existsSync(join(d, `${ID}-1280.webp`)));
+  } finally { console.error = e; console.warn = w; rmSync(d, { recursive: true }); }
+});
+
+test('refreshThumbSafe: a good film passes through unchanged (failed false)', async () => {
+  const d = dir();
+  try {
+    const r = await refreshThumbSafe(d, ID, undefined, { fetch: async () => jpg('one'), convert });
+    assert.equal(r.failed, false);
+    assert.equal(r.changed, true);
+    assert.ok(r.sha.startsWith('maxresdefault:'));
+  } finally { rmSync(d, { recursive: true }); }
+});
+
+test('sync-ambience skips a failed film through refreshThumbSafe (never calls refreshThumb directly)', () => {
+  const src = readFileSync(fileURLToPath(new URL('./sync-ambience.mjs', import.meta.url)), 'utf8');
+  assert.ok(!/\brefreshThumb\(/.test(src), 'sync-ambience must not call the throwing refreshThumb');
+  assert.match(src, /const th = await refreshThumbSafe\(/);
+  assert.match(src, /if \(th\.failed\) continue;/);
 });
 
 // WR-121: refreshThumb writes `<id>-1280.webp.new` first; ffmpeg cannot pick a muxer from ".new", so every
