@@ -48,7 +48,7 @@
   <main id="main">
     <section class="section" style="padding-top:clamp(32px,6vw,72px)" aria-labelledby="privacy-title">
       <div class="wrap prose">
-        <p class="fig"><span>privacy</span> <b>last updated 2026-09-24</b></p>
+        <p class="fig"><span>privacy</span> <b>last updated 2026-11-01</b></p>
         <h1 class="h2" id="privacy-title" style="font-size:clamp(36px,6vw,56px)">Privacy</h1>
         <p class="lede">Short version: this website doesn't track you. It counts visits, without cookies. The game keeps your progress, and sends crash reports so bugs can be fixed.</p>
 
@@ -67,6 +67,19 @@
         <h2>Minigolf Pro</h2>
         <p>When you play Minigolf Pro here, the game saves your progress in your browser. Cloud save, leaderboards, community holes and online play use Google Firebase with an anonymous account that is created for you. Error and crash reports are always sent, with any free text scrubbed of email addresses, web addresses and file paths. Gameplay analytics are off unless you switch them on in Settings. The details are in the game's own policy:</p>
         <p><a class="link-arrow" href="../play/privacy.html">Minigolf Pro privacy policy</a></p>
+
+        <h2 id="youtube-api">YouTube API Services (the studio's own upload tool)</h2>
+        <p>Greenfield Studio uses YouTube API Services in a small internal tool. The tool is run by the studio owner, on the studio's own computer, to schedule and upload the studio's own videos to the studio's own YouTube channels (Greenfield Ambience and Greenfield Studio). It is not a public app or service: nobody else signs in to it, and it has no users apart from the studio.</p>
+        <ul>
+          <li><strong>What it can reach.</strong> After the owner signs in with Google, the tool can upload and schedule videos on the channel the owner chose, and read that channel's own statistics (views, watch time, subscribers) and the comments on the studio's own videos. The comment text and the public display name of the person who wrote it are read so that the studio can answer questions; display names are stored only as a short scrambled code.</li>
+          <li><strong>What it keeps.</strong> The Google sign-in token is stored in a locked folder on the studio computer. Statistics and comments are kept on that computer only, and each daily read replaces the previous one (the statistics keep a daily history of numbers, with no personal data in it). Nothing is sold, shared with a third party, used for advertising or published.</li>
+          <li><strong>Google and YouTube.</strong> By using the tool the studio is bound by the <a href="https://www.youtube.com/t/terms" rel="noopener">YouTube Terms of Service</a>, and Google's handling of your data is described in the <a href="https://policies.google.com/privacy" rel="noopener">Google Privacy Policy</a>. Use of information received from Google APIs follows the <a href="https://developers.google.com/youtube/terms/api-services-terms-of-service" rel="noopener">YouTube API Services Terms of Service</a> and the Google API Services User Data Policy, including the Limited Use requirements.</li>
+          <li><strong>Revoking access.</strong> The channel owner can withdraw the tool's access at any time in the <a href="https://security.google.com/settings/security/permissions" rel="noopener">Google security settings</a>. When access is withdrawn, the studio deletes the stored token and any data it holds from the API within 7 days.</li>
+          <li><strong>Your comments.</strong> If you wrote a comment on one of our videos and want it removed from the studio's copy, write to the address below and it is deleted within 7 days. To remove the comment itself, delete it on YouTube.</li>
+        </ul>
+
+        <h2 id="terms">Terms of use of the tool</h2>
+        <p>The tool is for internal use by Greenfield Studio only. It is not offered to anyone else, has no accounts and costs nothing to anyone. It is provided as it is, without warranty. The studio uses it only in line with the YouTube Terms of Service, the YouTube API Services Terms of Service and the YouTube Developer Policies, and uploads only content the studio made itself. These terms can change; the date at the top of this page shows the last change.</p>
 
         <h2>Contact</h2>
         <p>Questions, or a request to see or delete your data: <a href="mailto:greenfieldstudiodev@gmail.com">greenfieldstudiodev@gmail.com</a>.</p>
@@ -99,6 +112,7 @@
           <ul>
             <li><a href="../#studio">About</a></li>
             <li><a href="../press/">Press kit</a></li>
+            <li><a href="../licensing/">Licensing &amp; custom renders</a></li>
             <li><a href="../#contact">Contact</a></li>
             <li><a href="../privacy/">Privacy</a></li>
           </ul>
