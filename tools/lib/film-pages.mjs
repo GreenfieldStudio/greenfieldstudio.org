@@ -167,6 +167,30 @@ export function parseDescription(f, soften = false) {
 
 const clip = (s, n) => (s.length <= n ? s : s.slice(0, n - 1).replace(/\s+\S*$/, '') + '…');
 
+/**
+ * The meta description: text up to `n` characters as is; longer text ends at the last whole sentence that
+ * fits in `hard` characters (Google shortens a long snippet on its own, so a few extra characters cost
+ * nothing, while a sentence cut off mid-way with "…" reads as broken). Only when not even the first
+ * sentence fits does it fall back to the word clip.
+ */
+export function metaDescription(s, n = 158, hard = 250) {
+  if (s.length <= n) return s;
+  let out = '';
+  for (const x of s.split(/(?<=[.!?])\s+/)) {
+    if (!/[.!?]$/.test(x)) break; // an unfinished tail is never taken
+    const next = out ? `${out} ${x}` : x;
+    if (next.length > hard) break;
+    out = next;
+  }
+  return /[.!?]$/.test(out) ? out : clip(s, n);
+}
+
+/** Raise (never lower) the <lastmod> of one sitemap URL to `date`: the pages that list the films are as new as the newest film. */
+export function bumpLastmod(xml, loc, date) {
+  const re = new RegExp(`(<loc>${loc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}</loc><lastmod>)(\\d{4}-\\d{2}-\\d{2})(</lastmod>)`);
+  return xml.replace(re, (m, a, old, b) => (date > old ? `${a}${date}${b}` : m));
+}
+
 const head = ({ title, desc, url, ogImage, ld }) => `<head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -218,7 +242,7 @@ export function renderFilmPage(f, others, cfg = {}) {
   const watch = `https://www.youtube.com/watch?v=${f.id}`;
   const title = `${name}${s ? ` · ${longLength(s)}${sp.res ? ' in 4K' : ''}` : sp.res ? ' · 4K' : ''} · Greenfield Ambience`;
   const firstP = (d.body.find((b) => b.p) || {}).p || '';
-  const desc = clip(d.summary.length < 90 && firstP ? `${d.summary} ${firstP}` : d.summary, 158);
+  const desc = metaDescription(d.summary.length < 90 && firstP ? `${d.summary} ${firstP}` : d.summary);
   const thumb = `../../assets/media/ambience/films/${f.id}`;
   const spec = [s ? longLength(s) : '', sp.res ? '4K' : '', sp.fps, sp.noMusic ? 'no music' : ''].filter(Boolean).join(' · ');
 
@@ -409,7 +433,10 @@ export function syncFilmPages({ site, db, cfgFile, check }) {
   const re = /(<!-- films:start -->)[\s\S]*?(<!-- films:end -->)/;
   if (!re.test(sm)) throw new Error('sitemap.xml has no films:start / films:end markers');
   const eol = sm.includes('\r\n') ? '\r\n' : '\n';
-  const next = sm.replace(re, (_, a, b) => `${a}${eol}${block.replace(/\n/g, eol)}${eol}  ${b}`);
+  let next = sm.replace(re, (_, a, b) => `${a}${eol}${block.replace(/\n/g, eol)}${eol}  ${b}`);
+  // the home page and the Ambience hub list the films, so they are at least as new as the newest film
+  const newest = films.map((f) => f.published).filter((p) => /^\d{4}-\d{2}-\d{2}$/.test(p || '')).sort().pop();
+  if (newest) for (const loc of [`${SITE_URL}/`, `${SITE_URL}/ambience/`]) next = bumpLastmod(next, loc, newest);
   if (check) { if (next.replace(/\r/g, '') !== sm.replace(/\r/g, '')) problems.push('sitemap.xml differs from films.json'); }
   else if (next !== sm) writeFileSync(smPath, next);
   return problems;
