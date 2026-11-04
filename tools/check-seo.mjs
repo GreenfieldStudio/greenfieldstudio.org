@@ -31,7 +31,8 @@ const meta = (html, name) => (new RegExp(`<meta name="${name}" content="([^"]*)"
 const canonical = (html) => (/<link rel="canonical" href="([^"]+)"/.exec(html) || [])[1];
 
 const sitemap = read('sitemap.xml');
-const entries = [...sitemap.matchAll(/<loc>([^<]+)<\/loc><lastmod>([^<]*)<\/lastmod>/g)].map((m) => ({ loc: m[1], lastmod: m[2] }));
+// one entry per <url>, so a URL with no <lastmod> shows up as an empty date and fails the date test
+const entries = [...sitemap.matchAll(/<url>([\s\S]*?)<\/url>/g)].map((m) => ({ loc: (/<loc>([^<]+)<\/loc>/.exec(m[1]) || [])[1], lastmod: (/<lastmod>([^<]*)<\/lastmod>/.exec(m[1]) || [])[1] || '' }));
 const films = JSON.parse(read('assets/media/ambience/films/films.json')).films.filter((f) => f.slug);
 
 // ---- sitemap
@@ -82,6 +83,11 @@ test('metaDescription: short text stays, long text ends on a whole sentence, nev
   // a short opening plus one long sentence is kept whole rather than shrunk to the stub (the clownfish page)
   const stub = 'A quiet hour with a family of clownfish and their two anemones. No music. Clownfish weave in and out of the purple-tipped anemones while a lionfish and other reef fish drift past, with kelp, rocks and sunlight rippling on the sand. One fixed view, a full hour, in 4K 60fps.';
   assert.ok(metaDescription(stub).endsWith('on the sand.'), metaDescription(stub));
+});
+
+test('metaDescription: an unfinished tail never replaces the last whole sentence', () => {
+  const out = metaDescription(`A quiet cabin. ${'rain '.repeat(35)}`);
+  assert.equal(out, 'A quiet cabin.');
 });
 
 test('metaDescription: a first sentence that is too long falls back to the word clip', () => {

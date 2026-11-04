@@ -177,6 +177,7 @@ export function metaDescription(s, n = 158, hard = 250) {
   if (s.length <= n) return s;
   let out = '';
   for (const x of s.split(/(?<=[.!?])\s+/)) {
+    if (!/[.!?]$/.test(x)) break; // an unfinished tail is never taken
     const next = out ? `${out} ${x}` : x;
     if (next.length > hard) break;
     out = next;
