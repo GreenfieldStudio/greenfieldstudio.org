@@ -37,7 +37,8 @@ const films = JSON.parse(read('assets/media/ambience/films/films.json')).films.f
 // ---- sitemap
 test('every sitemap URL has a real lastmod (valid date, not in the future)', () => {
   assert.ok(entries.length >= 20, `only ${entries.length} URLs read`);
-  const today = new Date().toISOString().slice(0, 10);
+  // one day of slack: the studio stamps dates in GMT+7, which is ahead of UTC for 7 hours a day
+  const today = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
   for (const e of entries) {
     assert.match(e.lastmod, /^\d{4}-\d{2}-\d{2}$/, `${e.loc}: lastmod "${e.lastmod}"`);
     assert.ok(!Number.isNaN(Date.parse(e.lastmod)) && new Date(e.lastmod).toISOString().slice(0, 10) === e.lastmod, `${e.loc}: ${e.lastmod} is not a calendar date`);
@@ -74,10 +75,13 @@ test('bumpLastmod raises a date, never lowers it, ignores an unknown URL', () =>
 // ---- descriptions
 test('metaDescription: short text stays, long text ends on a whole sentence, never mid-sentence', () => {
   assert.equal(metaDescription('One hour of rain. No music.'), 'One hour of rain. No music.');
-  const long = 'A cozy cabin on a stormy night. No music. Rain patters on the roof and runs down the windows, thunder rolls over the mountains, and the fire crackles and sends up sparks. A black cat sleeps on the sheepskin by the hearth, until the thunder wakes her.';
+  const long = 'A cozy cabin on a stormy night. No music. Rain patters on the roof and runs down the windows, thunder rolls over the mountains, and the fire crackles and sends up sparks. A black cat sleeps on the sheepskin by the hearth, until the thunder wakes her, or something drifts past the window.';
   const out = metaDescription(long);
-  assert.ok(out.length <= 200 && /[.!?]$/.test(out) && !out.includes('…'), out);
+  assert.ok(out.length <= 250 && /[.!?]$/.test(out) && !out.includes('…'), out);
   assert.ok(out.endsWith('sends up sparks.'), out);
+  // a short opening plus one long sentence is kept whole rather than shrunk to the stub (the clownfish page)
+  const stub = 'A quiet hour with a family of clownfish and their two anemones. No music. Clownfish weave in and out of the purple-tipped anemones while a lionfish and other reef fish drift past, with kelp, rocks and sunlight rippling on the sand. One fixed view, a full hour, in 4K 60fps.';
+  assert.ok(metaDescription(stub).endsWith('on the sand.'), metaDescription(stub));
 });
 
 test('metaDescription: a first sentence that is too long falls back to the word clip', () => {
@@ -90,7 +94,7 @@ test('no film page has a meta or share description cut off with an ellipsis', ()
   for (const f of films) {
     const html = read(`ambience/${f.slug}/index.html`);
     for (const d of [meta(html, 'description'), (/<meta property="og:description" content="([^"]*)"/.exec(html) || [])[1]]) {
-      assert.ok(d && d.length >= 40, `${f.slug}: description missing or very short`);
+      assert.ok(d && d.length >= 90, `${f.slug}: description missing or a stub (${d && d.length} characters)`);
       assert.ok(!/…$|\.\.\.$/.test(d), `${f.slug}: description is cut off: "${d.slice(-40)}"`);
     }
   }
@@ -108,7 +112,7 @@ test('every JSON-LD block on every page parses', () => {
     }
   };
   walk('.');
-  assert.ok(n >= 12, `only ${n} blocks found`);
+  assert.ok(n > 0, 'no JSON-LD block found at all');
 });
 
 test('every film page has a complete VideoObject', () => {

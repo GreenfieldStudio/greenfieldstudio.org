@@ -173,7 +173,7 @@ const clip = (s, n) => (s.length <= n ? s : s.slice(0, n - 1).replace(/\s+\S*$/,
  * nothing, while a sentence cut off mid-way with "…" reads as broken). Only when not even the first
  * sentence fits does it fall back to the word clip.
  */
-export function metaDescription(s, n = 158, hard = 200) {
+export function metaDescription(s, n = 158, hard = 250) {
   if (s.length <= n) return s;
   let out = '';
   for (const x of s.split(/(?<=[.!?])\s+/)) {
