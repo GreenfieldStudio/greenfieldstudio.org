@@ -300,6 +300,37 @@ test('WS-01: a gh-pages tip that names no source commit is refused', () => {
   assertRefused(deploy(remote), remote, tip(remote), /does not name its source commit/);
 });
 
+test('WS-01: core.abbrev=6 (short ids of 6 characters): two deploys in a row both pass, and the Source line carries the full id', () => {
+  writeSite();
+  const remote = bare('abbrev', NO_FORCE_HOOK);
+  git(['config', 'core.abbrev', '6'], SITE);
+  try {
+    assert.equal(deploy(remote).code, 0);
+    assert.ok(git(['log', '-1', '--format=%B', 'gh-pages'], remote).includes(`Source: main@${head()}.`), 'full id in the Source line');
+    writeSite({ home: 'v2' });
+    const r = deploy(remote);
+    assert.equal(r.code, 0, r.out);
+    assert.equal(count(remote), 2);
+  } finally {
+    git(['config', '--unset', 'core.abbrev'], SITE);
+  }
+});
+
+test('WS-01: a live tip written with a 6-character source id (old or core.abbrev=6 deploys) is still understood', () => {
+  writeSite();
+  const remote = bare('shortsrc', NO_FORCE_HOOK);
+  const hand = join(ROOT, 'hand-short');
+  git(['init', '-q', '-b', 'gh-pages', hand]);
+  put(join(hand, 'x'), 'x');
+  git(['add', '-A'], hand);
+  git(['commit', '-q', '-m', `Deploy site\n\nPublished by tools/deploy.mjs. Source: main@${head().slice(0, 6)}. Game build: x.`], hand);
+  git(['push', '-q', remote, 'gh-pages'], hand);
+  rmSync(hand, { recursive: true, force: true });
+  const r = deploy(remote);
+  assert.equal(r.code, 0, r.out);
+  assert.equal(count(remote), 2);
+});
+
 test('WS-01: a shallow checkout (CI) at main still deploys when the live source is older than its history', () => {
   writeSite();
   const remote = bare('shallow', NO_FORCE_HOOK);

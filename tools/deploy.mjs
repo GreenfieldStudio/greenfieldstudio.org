@@ -176,7 +176,7 @@ const stale = (why) => die(`refusing to publish: ${why}\n        Nothing was pus
 const isAncestor = (older, newer) => {
   try { git(['merge-base', '--is-ancestor', older, newer], SITE); return true; } catch (e) { if (e.status === 1) return false; throw e; }
 };
-if (!/^[0-9a-f]{40}$/.test(headFull)) stale('the site folder is not a git checkout with a commit (HEAD), so it cannot be shown to contain the current main.');
+if (!/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(headFull)) stale('the site folder is not a git checkout with a commit (HEAD), so it cannot be shown to contain the current main.');
 const mainTip = gitOrDie(['ls-remote', '--heads', remote, 'refs/heads/main'], 'reading main', SITE).split(/\s+/)[0] || '';
 if (!mainTip) stale(`${shown} has no main branch to compare with.`);
 // A shallow checkout (CI) lacks the older commits the comparison needs; fetch them all.
@@ -188,7 +188,8 @@ try { mainOk = isAncestor(mainSha, headFull); } catch (e) { stale(`could not com
 if (!mainOk) stale(`${src} does not contain the current main (${mainSha.slice(0, 9)}); this checkout is behind main or on a branch that left it.`);
 // The gh-pages tip's source: checked below, once the tip's commit message has been fetched.
 function requireTipSource(message) {
-  const m = [...message.matchAll(/Source: main@([0-9a-f]{7,40})\b/g)].pop();
+  // Any length git can write (core.abbrev may be as short as 4; old tips carry abbreviated ids, new ones the full id).
+  const m = [...message.matchAll(/Source: main@([0-9a-f]{4,64})\b/g)].pop();
   if (!m) stale(`the live gh-pages tip ${tip.slice(0, 9)} does not name its source commit ("Source: main@<sha>"), so this deploy cannot be shown to be newer than what is live.`);
   let full = '';
   try { full = git(['rev-parse', '--verify', '--quiet', `${m[1]}^{commit}`], SITE); } catch (_) {}
@@ -215,7 +216,7 @@ if (tip) { try { git(['diff', '--cached', '--quiet'], OUT); changed = false; } c
 if (!changed) {
   console.log(`deploy: nothing to publish — gh-pages (${tip.slice(0, 9)}) already holds exactly this site.`);
 } else {
-  gitOrDie(['commit', '-q', '-m', `Deploy site ${src} · game ${game.slice(0, 9)}\n\nPublished by tools/deploy.mjs. Source: main@${src}. Game build: ${game}.`]);
+  gitOrDie(['commit', '-q', '-m', `Deploy site ${src} · game ${game.slice(0, 9)}\n\nPublished by tools/deploy.mjs. Source: main@${headFull || src}. Game build: ${game}.`]);
   console.log(`deploy: pushing to ${shown} (gh-pages, ${tip ? `fast-forward from ${tip.slice(0, 9)}` : 'new branch'})…`);
   // No --force: if gh-pages moved since the fetch, or the remote refuses, this fails and nothing is lost.
   gitOrDie(['push', remote, `HEAD:${ref}`], 'push');
