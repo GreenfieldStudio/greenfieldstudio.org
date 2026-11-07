@@ -170,7 +170,7 @@ const tip = gitOrDie(['ls-remote', '--heads', remote, ref], 'reading gh-pages', 
 // reverted 16 files this way). Anything that cannot be proven (no git checkout, no remote main, an
 // unreadable or unknown source, git errors) refuses too. There is no override and no force path:
 // to deploy, bring the checkout up to date with main.
-// Reads only; runs before anything is committed or pushed.
+// Changes nothing in the working tree, the branches or the remote (it only fetches main's objects into .git, and FETCH_HEAD); runs before anything is committed or pushed.
 const stale = (why) => die(`refusing to publish: ${why}\n        Nothing was pushed. Update this checkout first (git fetch origin main, then merge origin/main), rebuild, and deploy again. There is no override.`);
 // true / false, or an error (never "probably yes").
 const isAncestor = (older, newer) => {
