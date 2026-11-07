@@ -8,14 +8,17 @@
  * to a bare repo standing in for GitHub. Covers: first publish, second publish with changes, no-op
  * publish, source-only change, a remote that refuses non-fast-forward updates (pre-receive hook, like
  * the repo's ruleset), a remote that refuses everything, a remote that cannot be reached, and the
- * dry run. Nothing here touches GitHub, the real .deploy/ folder or the real gh-pages branch.
+ * dry run. The ancestry guard (WS-01) is covered by: a stale checkout, a checkout that left main, a
+ * deploy that would drop the live source, a folder that is not a git checkout, a remote without main,
+ * a gh-pages tip without a source line, and a shallow (CI-style) checkout that must still pass.
+ * Nothing here touches GitHub, the real .deploy/ folder or the real gh-pages branch.
  */
 import assert from 'node:assert/strict';
-import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { PRIVACY_MARKER, BEACON_SRC, CLOUDFLARE_BEACON_TOKEN } from './analytics.mjs';
 import { SIGNUP, PRIVACY_SIGNUP_MARKER } from './signup.mjs';
 
@@ -34,27 +37,42 @@ const put = (file, text) => { mkdirSync(dirname(file), { recursive: true }); wri
 
 // ── a fake site that passes deploy.mjs's preconditions ──────────────────────────
 const SITE = join(ROOT, 'site');
-mkdirSync(join(SITE, 'tools'), { recursive: true });
-for (const f of ['deploy.mjs', 'analytics.mjs', 'signup.mjs']) cpSync(join(REAL, f), join(SITE, 'tools', f));
-cpSync(join(REAL, 'lib'), join(SITE, 'tools', 'lib'), { recursive: true });
+function installTools(dir) {
+  mkdirSync(join(dir, 'tools'), { recursive: true });
+  for (const f of ['deploy.mjs', 'analytics.mjs', 'signup.mjs']) cpSync(join(REAL, f), join(dir, 'tools', f));
+  cpSync(join(REAL, 'lib'), join(dir, 'tools', 'lib'), { recursive: true });
+}
+installTools(SITE);
 const privacy = `<html><body>privacy ${CLOUDFLARE_BEACON_TOKEN ? PRIVACY_MARKER : ''} ${SIGNUP ? PRIVACY_SIGNUP_MARKER : ''}</body></html>\n`;
-function writeSite(extra = {}) {
-  put(join(SITE, 'index.html'), `<html><body>home ${extra.home || 'v1'}</body></html>\n`);
-  put(join(SITE, '404.html'), '<html><body>404</body></html>\n');
-  put(join(SITE, 'CNAME'), 'greenfieldstudio.org\n');
-  put(join(SITE, '.nojekyll'), '');
-  put(join(SITE, 'privacy', 'index.html'), privacy);
-  put(join(SITE, 'play', 'index.html'), '<html><body>game</body></html>\n');
-  put(join(SITE, 'play', 'BUILD.txt'), 'commit 0123456789abcdef\n');
-  put(join(SITE, 'press', 'greenfield-studio-presskit.zip'), 'zip');
-  put(join(SITE, 'README.md'), `readme ${extra.readme || 'v1'}\n`); // excluded from the deploy
-  rmSync(join(SITE, 'journal'), { recursive: true, force: true });
-  if (extra.journal) put(join(SITE, 'journal', 'index.html'), `<html><body>${extra.journal}</body></html>\n`);
+function writeSite(extra = {}, dir = SITE) {
+  put(join(dir, 'index.html'), `<html><body>home ${extra.home || 'v1'}</body></html>\n`);
+  put(join(dir, '404.html'), '<html><body>404</body></html>\n');
+  put(join(dir, 'CNAME'), 'greenfieldstudio.org\n');
+  put(join(dir, '.nojekyll'), '');
+  put(join(dir, 'privacy', 'index.html'), privacy);
+  put(join(dir, 'play', 'index.html'), '<html><body>game</body></html>\n');
+  put(join(dir, 'play', 'BUILD.txt'), 'commit 0123456789abcdef\n');
+  put(join(dir, 'press', 'greenfield-studio-presskit.zip'), 'zip');
+  put(join(dir, 'README.md'), `readme ${extra.readme || 'v1'}\n`); // excluded from the deploy
+  rmSync(join(dir, 'journal'), { recursive: true, force: true });
+  if (extra.journal) put(join(dir, 'journal', 'index.html'), `<html><body>${extra.journal}</body></html>\n`);
 }
 
-function bare(name, hook) {
+// The site folder is a git checkout (deploy.mjs refuses anything else). Its commits are empty: only
+// the history matters to the ancestry guard, the files come from the folder as before.
+git(['init', '-q', '-b', 'main', SITE]);
+const head = (dir = SITE) => git(['rev-parse', 'HEAD'], dir);
+const commit = (msg, dir = SITE) => { git(['commit', '-q', '--allow-empty', '-m', msg], dir); return head(dir); };
+const moveTo = (sha, dir = SITE) => git(['checkout', '-q', '--detach', sha], dir);
+const pushMain = (remote, dir = SITE) => git(['push', '-q', remote, 'HEAD:refs/heads/main'], dir);
+commit('base');
+
+// A bare repo standing in for GitHub. Its `main` starts at the site's current commit (as on GitHub,
+// where gh-pages is deployed from a main that exists) unless seed is false.
+function bare(name, hook, seed = true) {
   const dir = join(ROOT, name + '.git');
   git(['init', '-q', '--bare', '-b', 'main', dir]);
+  if (seed) pushMain(dir);
   if (hook) { const p = join(dir, 'hooks', 'pre-receive'); writeFileSync(p, hook); chmodSync(p, 0o755); }
   return dir;
 }
@@ -69,9 +87,9 @@ done
 `;
 const REFUSE_ALL_HOOK = '#!/bin/sh\necho "GH013: Repository rule violations found" >&2\nexit 1\n';
 
-function deploy(remote, args = ['--push']) {
-  const r = spawnSync(process.execPath, [join(SITE, 'tools', 'deploy.mjs'), ...args], {
-    cwd: SITE, encoding: 'utf8', env: { ...ENV, ...(remote ? { DEPLOY_REMOTE: remote } : {}) }, timeout: 120000,
+function deploy(remote, args = ['--push'], site = SITE, env = {}) {
+  const r = spawnSync(process.execPath, [join(site, 'tools', 'deploy.mjs'), ...args], {
+    cwd: site, encoding: 'utf8', env: { ...ENV, ...env, ...(remote ? { DEPLOY_REMOTE: remote } : {}) }, timeout: 120000,
   });
   return { code: r.status, out: `${r.stdout}${r.stderr}` };
 }
@@ -204,6 +222,130 @@ test('dry run assembles but never touches the remote', () => {
   assert.equal(r.code, 0, r.out);
   assert.match(r.out, /dry run/);
   assert.equal(tip(remote), '');
+});
+
+// ── ancestry guard (WS-01) ─────────────────────────────────────────────────────
+// A refused deploy: exit 1, says why, pushes nothing (gh-pages tip and history unchanged), leaves no scratch repo.
+function assertRefused(r, remote, before, why) {
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.out, /refusing to publish/);
+  assert.match(r.out, why);
+  assert.doesNotMatch(r.out, /pushing to|deploy: done/);
+  assert.equal(tip(remote), before, 'gh-pages must not move');
+  assert.ok(!existsSync(join(SITE, '.deploy', '.git')), 'scratch repo removed');
+}
+
+test('WS-01: a checkout behind main is refused (the stale-checkout rollback), gh-pages untouched', () => {
+  writeSite();
+  const remote = bare('stale', NO_FORCE_HOOK);
+  const old = head();
+  commit('main moves on'); pushMain(remote);
+  assert.equal(deploy(remote).code, 0, 'an up-to-date checkout still deploys');
+  const before = tip(remote);
+  commit('main moves on again'); pushMain(remote);
+  moveTo(old);
+  writeSite({ home: 'old' });
+  assertRefused(deploy(remote), remote, before, /does not contain the current main/);
+  assert.equal(count(remote), 1);
+});
+
+test('WS-01: a checkout on a branch that left main is refused', () => {
+  writeSite();
+  const remote = bare('sibling', NO_FORCE_HOOK);
+  const base = head();
+  commit('main moves on'); pushMain(remote);
+  moveTo(base); commit('side branch');
+  assertRefused(deploy(remote), remote, '', /does not contain the current main/);
+});
+
+test('WS-01: a checkout ahead of main deploys, but main alone then cannot roll it back (the live source must be contained)', () => {
+  writeSite();
+  const remote = bare('source', NO_FORCE_HOOK);
+  const mainTip = head();
+  commit('work not yet on main');
+  assert.equal(deploy(remote).code, 0, 'a descendant of main may deploy');
+  const before = tip(remote);
+  moveTo(mainTip); // == remote main, but without the commit the live site was built from
+  writeSite({ home: 'v2' });
+  assertRefused(deploy(remote), remote, before, /source of the live gh-pages tip/);
+});
+
+test('WS-01: a folder that is not a git checkout is refused', () => {
+  writeSite();
+  const remote = bare('nogit', NO_FORCE_HOOK);
+  renameSync(join(SITE, '.git'), join(SITE, '.git-off'));
+  try {
+    assertRefused(deploy(remote, ['--push'], SITE, { GIT_CEILING_DIRECTORIES: ROOT }), remote, '', /not a git checkout/);
+  } finally {
+    renameSync(join(SITE, '.git-off'), join(SITE, '.git'));
+  }
+});
+
+test('WS-01: a remote without a main branch is refused', () => {
+  writeSite();
+  const remote = bare('nomain', NO_FORCE_HOOK, false);
+  assertRefused(deploy(remote), remote, '', /no main branch/);
+});
+
+test('WS-01: a gh-pages tip that names no source commit is refused', () => {
+  writeSite();
+  const remote = bare('nosource', NO_FORCE_HOOK);
+  const hand = join(ROOT, 'hand');
+  git(['init', '-q', '-b', 'gh-pages', hand]);
+  put(join(hand, 'x'), 'x');
+  git(['add', '-A'], hand);
+  git(['commit', '-q', '-m', 'made by hand'], hand);
+  git(['push', '-q', remote, 'gh-pages'], hand);
+  rmSync(hand, { recursive: true, force: true });
+  assertRefused(deploy(remote), remote, tip(remote), /does not name its source commit/);
+});
+
+test('WS-01: core.abbrev=6 (short ids of 6 characters): two deploys in a row both pass, and the Source line carries the full id', () => {
+  writeSite();
+  const remote = bare('abbrev', NO_FORCE_HOOK);
+  git(['config', 'core.abbrev', '6'], SITE);
+  try {
+    assert.equal(deploy(remote).code, 0);
+    assert.ok(git(['log', '-1', '--format=%B', 'gh-pages'], remote).includes(`Source: main@${head()}.`), 'full id in the Source line');
+    writeSite({ home: 'v2' });
+    const r = deploy(remote);
+    assert.equal(r.code, 0, r.out);
+    assert.equal(count(remote), 2);
+  } finally {
+    git(['config', '--unset', 'core.abbrev'], SITE);
+  }
+});
+
+test('WS-01: a live tip written with a 6-character source id (old or core.abbrev=6 deploys) is still understood', () => {
+  writeSite();
+  const remote = bare('shortsrc', NO_FORCE_HOOK);
+  const hand = join(ROOT, 'hand-short');
+  git(['init', '-q', '-b', 'gh-pages', hand]);
+  put(join(hand, 'x'), 'x');
+  git(['add', '-A'], hand);
+  git(['commit', '-q', '-m', `Deploy site\n\nPublished by tools/deploy.mjs. Source: main@${head().slice(0, 6)}. Game build: x.`], hand);
+  git(['push', '-q', remote, 'gh-pages'], hand);
+  rmSync(hand, { recursive: true, force: true });
+  const r = deploy(remote);
+  assert.equal(r.code, 0, r.out);
+  assert.equal(count(remote), 2);
+});
+
+test('WS-01: a shallow checkout (CI) at main still deploys when the live source is older than its history', () => {
+  writeSite();
+  const remote = bare('shallow', NO_FORCE_HOOK);
+  assert.equal(deploy(remote).code, 0); // live source = the seed commit
+  commit('second'); commit('third'); pushMain(remote);
+  const ci = join(ROOT, 'ci');
+  git(['clone', '-q', '--depth', '1', '--branch', 'main', pathToFileURL(remote).href, ci]);
+  assert.equal(git(['rev-parse', '--is-shallow-repository'], ci), 'true');
+  installTools(ci);
+  writeSite({ home: 'v2' }, ci);
+  const r = deploy(remote, ['--push'], ci);
+  assert.equal(r.code, 0, r.out);
+  assert.equal(count(remote), 2);
+  assert.ok(show(remote, 'index.html').includes('home v2'));
+  rmSync(ci, { recursive: true, force: true });
 });
 
 let failed = 0;

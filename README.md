@@ -130,6 +130,10 @@ history is never rewritten). The commit's tree is exactly the assembled site, so
 `.nojekyll` stay, and files that left the site leave the branch. When the site is identical to what
 `gh-pages` holds, nothing is committed or pushed. A rejected push, a moved branch or an unreachable
 remote ends the script with exit 1 and the git message (the token in `DEPLOY_REMOTE` is hidden).
+`--push` also refuses (exit 1, nothing pushed, no override) unless the checked-out commit contains the
+remote's current `main` and the source commit the live `gh-pages` tip names (`Source: main@<sha>`):
+a stale checkout would otherwise publish an old tree as a fast-forward and roll the live site back.
+Update the checkout (`git fetch origin main`, merge `origin/main`), rebuild, deploy again.
 The repo's ruleset forbids force-pushes and deletion on `gh-pages` (and `main`), which is why it
 works this way. Git stores an unchanged file once, so the history only grows by what changed; a new
 game build adds its ~35 MB. `npm test` (`tools/check-deploy.mjs`) tests all of this against local bare

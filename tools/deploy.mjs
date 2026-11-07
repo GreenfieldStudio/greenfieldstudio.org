@@ -5,6 +5,9 @@
  *   node tools/deploy.mjs            # dry run: assemble .deploy/ and report what would ship
  *   node tools/deploy.mjs --push     # publish: one normal commit on top of origin/gh-pages, fast-forward push
  *                                    # (nothing is committed when the site is unchanged; never --force)
+ *                                    # Refuses (exit 1, nothing pushed) unless the checked-out commit contains the
+ *                                    # remote's current main AND the source commit the live gh-pages tip names, so
+ *                                    # a stale checkout can't roll the live site back. No override.
  *   node tools/deploy.mjs --push --base <dir>   # same, in CI: borrow the game build and press downloads from <dir>,
  *                                    # a checkout of the branch that is already live (see below)
  *
@@ -73,6 +76,8 @@ for (const need of ['index.html', '404.html', 'CNAME', '.nojekyll', 'play/index.
 const game = (/commit\s+([0-9a-f]{7,40}|unknown)/.exec(readFileSync(join(SITE, 'play', 'BUILD.txt'), 'utf8')) || [])[1] || 'unknown';
 let src = 'uncommitted';
 try { src = git(['rev-parse', '--short', 'HEAD']); } catch (_) {}
+let headFull = '';
+try { headFull = git(['rev-parse', 'HEAD']); } catch (_) {}
 let dirty = '';
 try { dirty = git(['status', '--porcelain']); } catch (_) {}
 
@@ -157,6 +162,43 @@ const gitOrDie = (args, what, cwd = OUT) => {
 if (dirty) console.warn('deploy: note — publishing with uncommitted changes in the source tree.');
 const ref = 'refs/heads/gh-pages';
 const tip = gitOrDie(['ls-remote', '--heads', remote, ref], 'reading gh-pages', SITE).split(/\s+/)[0] || '';
+
+// ── ancestry guard (WS-01) ──────────────────────────────────────────────────────
+// The commit being deployed must be a descendant of the remote's current `main` AND of the source
+// commit the gh-pages tip names ("Source: main@<sha>"). Otherwise the deploy would be a plain
+// fast-forward commit that quietly rolls the live site back to an older tree (a stale checkout once
+// reverted 16 files this way). Anything that cannot be proven (no git checkout, no remote main, an
+// unreadable or unknown source, git errors) refuses too. There is no override and no force path:
+// to deploy, bring the checkout up to date with main.
+// Changes nothing in the working tree, the branches or the remote (it only fetches main's objects into .git, and FETCH_HEAD); runs before anything is committed or pushed.
+const stale = (why) => die(`refusing to publish: ${why}\n        Nothing was pushed. Update this checkout first (git fetch origin main, then merge origin/main), rebuild, and deploy again. There is no override.`);
+// true / false, or an error (never "probably yes").
+const isAncestor = (older, newer) => {
+  try { git(['merge-base', '--is-ancestor', older, newer], SITE); return true; } catch (e) { if (e.status === 1) return false; throw e; }
+};
+if (!/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(headFull)) stale('the site folder is not a git checkout with a commit (HEAD), so it cannot be shown to contain the current main.');
+const mainTip = gitOrDie(['ls-remote', '--heads', remote, 'refs/heads/main'], 'reading main', SITE).split(/\s+/)[0] || '';
+if (!mainTip) stale(`${shown} has no main branch to compare with.`);
+// A shallow checkout (CI) lacks the older commits the comparison needs; fetch them all.
+const shallow = git(['rev-parse', '--is-shallow-repository'], SITE) === 'true';
+gitOrDie(['fetch', '-q', '--no-tags', ...(shallow ? ['--unshallow'] : []), remote, 'refs/heads/main'], 'fetching main', SITE);
+const mainSha = gitOrDie(['rev-parse', '--verify', 'FETCH_HEAD^{commit}'], 'reading the fetched main', SITE);
+let mainOk;
+try { mainOk = isAncestor(mainSha, headFull); } catch (e) { stale(`could not compare HEAD with main ${mainSha.slice(0, 9)}: ${(e.stderr || e.message || '').toString().trim()}`); }
+if (!mainOk) stale(`${src} does not contain the current main (${mainSha.slice(0, 9)}); this checkout is behind main or on a branch that left it.`);
+// The gh-pages tip's source: checked below, once the tip's commit message has been fetched.
+function requireTipSource(message) {
+  // Any length git can write (core.abbrev may be as short as 4; old tips carry abbreviated ids, new ones the full id).
+  const m = [...message.matchAll(/Source: main@([0-9a-f]{4,64})\b/g)].pop();
+  if (!m) stale(`the live gh-pages tip ${tip.slice(0, 9)} does not name its source commit ("Source: main@<sha>"), so this deploy cannot be shown to be newer than what is live.`);
+  let full = '';
+  try { full = git(['rev-parse', '--verify', '--quiet', `${m[1]}^{commit}`], SITE); } catch (_) {}
+  if (!full) stale(`the live gh-pages tip ${tip.slice(0, 9)} was built from ${m[1]}, which this checkout does not have (it is not in main), so this deploy cannot be shown to contain it.`);
+  let ok;
+  try { ok = isAncestor(full, headFull); } catch (e) { stale(`could not compare HEAD with the live source ${m[1]}: ${(e.stderr || e.message || '').toString().trim()}`); }
+  if (!ok) stale(`${src} does not contain ${m[1]}, the source of the live gh-pages tip ${tip.slice(0, 9)}; publishing it would roll the live site back.`);
+}
+
 gitOrDie(['init', '-q', '-b', 'gh-pages']);
 // Whatever happens next (also die()), the scratch repo does not stay behind: it holds the site and FETCH_HEAD names the remote.
 process.on('exit', () => rmSync(join(OUT, '.git'), { recursive: true, force: true }));
@@ -164,6 +206,7 @@ if (tip) {
   // Fetch the tip, move the branch there without touching the files (reset --mixed leaves the working
   // tree = the assembled site), so `add -A` below records the difference to what is live.
   gitOrDie(['fetch', '-q', '--no-tags', '--depth=1', remote, ref]);
+  requireTipSource(gitOrDie(['log', '-1', '--format=%B', 'FETCH_HEAD']));
   gitOrDie(['reset', '-q', '--mixed', 'FETCH_HEAD']);
   if (gitOrDie(['rev-parse', 'HEAD']) !== tip) die(`fetched gh-pages is not the tip ${tip} that the remote announced; try again.`);
 }
@@ -173,7 +216,7 @@ if (tip) { try { git(['diff', '--cached', '--quiet'], OUT); changed = false; } c
 if (!changed) {
   console.log(`deploy: nothing to publish — gh-pages (${tip.slice(0, 9)}) already holds exactly this site.`);
 } else {
-  gitOrDie(['commit', '-q', '-m', `Deploy site ${src} · game ${game.slice(0, 9)}\n\nPublished by tools/deploy.mjs. Source: main@${src}. Game build: ${game}.`]);
+  gitOrDie(['commit', '-q', '-m', `Deploy site ${src} · game ${game.slice(0, 9)}\n\nPublished by tools/deploy.mjs. Source: main@${headFull || src}. Game build: ${game}.`]);
   console.log(`deploy: pushing to ${shown} (gh-pages, ${tip ? `fast-forward from ${tip.slice(0, 9)}` : 'new branch'})…`);
   // No --force: if gh-pages moved since the fetch, or the remote refuses, this fails and nothing is lost.
   gitOrDie(['push', remote, `HEAD:${ref}`], 'push');
