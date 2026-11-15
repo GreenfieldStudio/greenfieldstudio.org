@@ -51,6 +51,19 @@ test('a film of no known world gets no extra link', () => {
   assert.ok(!/wallpapers\/|licensing\//.test(renderFilmPage(f, [], undefined).split('<footer')[0]));
 });
 
+test('a title that names two worlds gets no link (never a wrong licence or wallpaper pitch)', () => {
+  for (const title of ['Cabin Window Over the Coral Reef 4K', 'Haunted Castle Cabin 4K', 'Castle Aquarium 4K']) {
+    const f = { id: 'abcdefghijk', slug: 'x', title, published: '2026-11-01', description: 'A film.' };
+    assert.equal(worldLink(f), null, title);
+    assert.ok(!/wallpapers\/|licensing\//.test(renderFilmPage(f, [], undefined).split('<footer')[0]), title);
+  }
+});
+
+test('the link is the same with a repeat-check entry on the film', () => {
+  const f = films.find((x) => worldLink(x)?.world === 'cabin');
+  assert.ok(renderFilmPage(f, [], { repeatCheck: '2026-10-01' }).includes(`<a class="link-arrow" href="${worldLink(f).href}">`));
+});
+
 test('every link target is a page on this site and every anchor in it exists', () => {
   for (const w of WORLD_LINKS) {
     const { file, hash } = target(w.href);
@@ -71,7 +84,7 @@ test('the committed film pages match the generator (a stale page fails here, not
     const p = join(ROOT, 'ambience', f.slug, 'index.html');
     const w = worldLink(f);
     const html = readFileSync(p, 'utf8');
-    if (w) assert.ok(html.includes(`<a class="link-arrow" href="${w.href}">`), `${f.slug}: page lacks ${w.href}`);
+    if (w) assert.equal(html.split(`<a class="link-arrow" href="${w.href}">${w.text}</a>`).length - 1, 1, `${f.slug}: page lacks the link ${w.href} once, with its text`);
     else assert.ok(!/href="\.\.\/\.\.\/(?:wallpapers|licensing)\/"/.test(html.split('<footer')[0]), f.slug);
   }
 });

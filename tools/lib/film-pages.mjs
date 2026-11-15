@@ -34,7 +34,10 @@ export const WORLD_LINKS = [
   { world: 'reef', test: /\b(?:reef|aquarium|anemone)\b/i, href: '../../wallpapers/#reef', text: 'The Coral Reef live wallpaper (coming)' },
   { world: 'castle', test: /\b(?:castle|dragon)\b/i, href: '../../wallpapers/#castle', text: 'The Enchanted Castle live wallpaper (coming)' },
 ];
-export const worldLink = (f) => WORLD_LINKS.find((w) => w.test.test(`${f.title} ${f.slug || ''}`.replace(/-/g, ' '))) || null;
+export const worldLink = (f) => {
+  const hits = WORLD_LINKS.filter((w) => w.test.test(`${f.title} ${f.slug || ''}`.replace(/-/g, ' ')));
+  return hits.length === 1 ? hits[0] : null; // a title that names two worlds is unclear: no link rather than a wrong one
+};
 
 /** "Coral Reef Aquarium 4K 60fps | 1 Hour Relaxing…" → "Coral Reef Aquarium"; a hand-set displayTitle wins.
  *  A derived name is a short name, never a claim: "No Loops" and the like are cut from it for every film. */
