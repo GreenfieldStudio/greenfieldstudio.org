@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Rain on the Cabin Window, live scene</title>
+<meta name="description" content="Rain on a dark cabin window at night, drawn live in your browser by our own code.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Rain on the Cabin Window, live scene">
+<meta property="og:description" content="Rain on a dark cabin window at night, drawn live in your browser by our own code.">
+<meta property="og:image" content="share.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Rain drops on a dark window with a row of conifers behind it at night.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="share.jpg">
+<link rel="stylesheet" href="../shared/ui.css">
+<style>
+  .wa-stage { height: 70vh; min-height: 240px; }
+  main { padding: var(--gutter); }
+</style>
+<noscript><style>.wa-stage { background: var(--field-deep) url("poster.webp") center / cover no-repeat; } .wa-noscript { margin: 0 0 12px; }</style></noscript>
+</head>
+<body>
+<div class="wa-stage" id="stage"><canvas id="scene" aria-label="Raindrops sliding down a window at night, with dark trees outside"></canvas></div>
+<main><div id="sound"></div><div id="card"></div>
+<noscript><p class="wa-noscript">This scene is drawn live by JavaScript, which is off in this browser. The picture above is a still from it.</p>
+<aside class="wa-card" aria-label="Rain on the Cabin Window"><h2 class="wa-card-title">Rain on the Cabin Window</h2><p class="wa-card-text">Rain on a dark cabin window at night, drawn live in your browser by our own code.</p><div class="wa-card-actions"><a class="wa-btn wa-btn-brass" href="../../cozy-halloween-cabin-ambience/?utm_source=live-scene&amp;utm_medium=brass-button&amp;utm_campaign=rain-window" rel="noopener">Watch the full film</a><a class="wa-btn" href="https://www.youtube.com/@Greenfield.Ambience?sub_confirmation=1" rel="noopener">Subscribe</a></div><p class="wa-card-also">Also: <a class="wa-link" href="../../cozy-halloween-cabin-sleep/" rel="noopener">Halloween Cabin Sleep, 8 hours</a></p></aside></noscript></main>
+<script src="../shared/funnel.js"></script>
+<script type="module" src="scene.js"></script>
+</body>
+</html>

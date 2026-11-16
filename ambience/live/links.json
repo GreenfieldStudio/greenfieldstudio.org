@@ -1,0 +1,23 @@
+{
+  "subscribe": "https://www.youtube.com/@Greenfield.Ambience?sub_confirmation=1",
+  "scenes": {
+    "rain-window": {
+      "title": "Rain on the Cabin Window",
+      "sentence": "Rain on a dark cabin window at night, drawn live in your browser by our own code.",
+      "film": {
+        "label": "Cozy Halloween Cabin, 3 hours",
+        "slug": "cozy-halloween-cabin-ambience",
+        "url": "https://youtu.be/HnjpBh_0lKk",
+        "utm": "utm_source=live-scene&utm_medium=brass-button&utm_campaign=rain-window"
+      },
+      "alsoFilms": [
+        {
+          "label": "Halloween Cabin Sleep, 8 hours",
+          "slug": "cozy-halloween-cabin-sleep",
+          "url": "https://youtu.be/PLLoPWFe6pQ"
+        }
+      ],
+      "wallpaper": null
+    }
+  }
+}
