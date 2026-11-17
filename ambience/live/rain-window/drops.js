@@ -124,7 +124,8 @@ export function createRain(opts = {}) {
         if (sPath[i] - sSegPath[i] >= SEG_STEP) pushSegment(i);
         if (sPath[i] / PX >= sBeadPath[i]) { // a small bead stays behind on the trail
           const rb = sr[i] * (0.22 + 0.18 * rnd());
-          if (addBead(sx[i] + (rnd() - 0.5) * sr[i] * 0.6, sy[i] - (sr[i] + rb) * 1.15, rb, 99) >= 0) sr[i] = Math.cbrt(Math.max(0, sr[i] ** 3 - rb ** 3));
+          addBead(sx[i] + (rnd() - 0.5) * sr[i] * 0.6, sy[i] - (sr[i] + rb) * 1.15, rb, 99); // always lands (a full pool replaces an old bead)
+          sr[i] = Math.cbrt(Math.max(0, sr[i] ** 3 - rb ** 3));
           sBeadPath[i] = sPath[i] / PX + 10 + 30 * rnd();
         }
         if (sTimer[i] <= 0) { pushSegment(i); pause(i); counters.pauses++; }
@@ -249,9 +250,19 @@ export function createRain(opts = {}) {
 
   // Run the simulation for `seconds` before the first frame so the pane starts wet (coarse steps, 20 per second).
   function warm(seconds) { for (let s = 0; s < seconds * 20; s++) step(0.05); }
+  // The same warm-up in slices (WR-1272): warmBegin(seconds) once, then warmSome(ms) from each frame until it returns true.
+  // The steps and their order are the same as warm(), so the picture is identical; only the main thread is not blocked
+  // for 1 to 4 s (more than 100 ms in a row would show as a frozen page on a phone).
+  let warmLeft = 0;
+  function warmBegin(seconds) { warmLeft = Math.round(seconds * 20); }
+  function warmSome(ms) {
+    const end = performance.now() + ms;
+    while (warmLeft > 0) { step(0.05); warmLeft--; if (performance.now() >= end) break; }
+    return warmLeft === 0;
+  }
 
   return {
-    step, fill, stats, warm,
+    step, fill, stats, warm, warmBegin, warmSome,
     setAspect(a) { if (a > 0 && Number.isFinite(a)) aspect = a; },
     get aspect() { return aspect; },
     get t() { return t; },

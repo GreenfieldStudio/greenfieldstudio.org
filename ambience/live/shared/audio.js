@@ -50,7 +50,7 @@ const SYNC_S = 15;
 // `mix` (optional): starting layer gains for a voice with setMix (rain-window mixer, W55); api.setMix() changes them live.
 export function mountSound({ el, worklet, processor, seed, volume = DEFAULT_VOLUME, clock, mix = null }) {
   const absWorklet = new URL(worklet, document.baseURI).href;
-  const st = { ctx: null, nodes: null, on: false, muted: false, volume, starting: null, mix };
+  const st = { ctx: null, nodes: null, on: false, muted: false, volume, starting: null, mix, idleTimer: 0 };
   el.classList.add('wa-sound');
   const status = document.createElement('p');
   status.className = 'wa-sound-status';
@@ -77,7 +77,16 @@ export function mountSound({ el, worklet, processor, seed, volume = DEFAULT_VOLU
   const gainNow = () => (st.muted ? 0 : st.volume);
   const ramp = (v) => { const g = st.nodes.vol.gain, t = st.ctx.currentTime; g.cancelScheduledValues(t); g.setTargetAtTime(v, t, 0.05); };
 
+  // "Sound off" fades out (0.25 s), then suspends the AudioContext: a muted but running context keeps the audio thread and
+  // the worklet busy and drains a phone battery (WR-1272, PR 31 review). The next "Sound on" resumes it.
+  const IDLE_SUSPEND_MS = 400;
+  function suspendSoon() {
+    clearTimeout(st.idleTimer);
+    st.idleTimer = setTimeout(() => { if (!st.on && st.ctx && st.ctx.state === 'running') st.ctx.suspend().catch(() => {}); }, IDLE_SUSPEND_MS);
+  }
+
   async function start() {
+    clearTimeout(st.idleTimer);
     if (st.ctx) { await st.ctx.resume(); return; }
     // The AudioContext is created inside the tap handler (autoplay rules).
     st.ctx = new AudioContext({ latencyHint: 'playback' });
@@ -106,7 +115,7 @@ export function mountSound({ el, worklet, processor, seed, volume = DEFAULT_VOLU
         st.on = true; st.muted = false; ramp(gainNow());
         btn.textContent = 'Sound off'; btn.setAttribute('aria-pressed', 'true'); say('Sound is on.');
       } else {
-        st.muted = true; ramp(0); st.on = false;
+        st.muted = true; ramp(0); st.on = false; suspendSoon();
         btn.textContent = 'Sound on'; btn.setAttribute('aria-pressed', 'false'); say('Sound is off.');
       }
     } catch (e) {

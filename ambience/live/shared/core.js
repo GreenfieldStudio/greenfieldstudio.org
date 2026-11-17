@@ -80,6 +80,7 @@ export function run(opts) {
   // The "still" sentence only where a poster exists (the reef has none until W18 makes it).
   function fail(text, e) {
     if (e) st.errors.push(String(e && e.message || e));
+    st.failed = true; // a failed scene stays stopped: returning to the tab must not restart it in a loop (WR-1272)
     stop();
     showPoster(text + (opts.poster ? ' This picture is a still from it.' : ''));
   }
@@ -87,11 +88,12 @@ export function run(opts) {
   function initGL() {
     const c = getContext(canvas, opts.contextAttributes);
     if (!c) return fail('This browser cannot draw the live scene.'), false;
-    st.gl = c.gl; st.version = c.version;
+    st.gl = c.gl; st.version = c.version; st.failed = false;
     resetCounts();
     try {
       st.scene = opts.init({ gl: st.gl, version: st.version, tier, rng });
     } catch (e) { return fail('The live scene could not start.', e), false; }
+    st.failed = false;
     resize(true);
     return true;
   }
@@ -117,10 +119,11 @@ export function run(opts) {
     if (!st.onScreen) st.offscreenFrames++;
     st.frames++;
     try {
-      st.scene.frame({ t: st.t, dt, phase, tier: tier.name, width: canvas.width, height: canvas.height,
+      const drew = st.scene.frame({ t: st.t, dt, phase, tier: tier.name, width: canvas.width, height: canvas.height,
         gl: st.gl, version: st.version });
       // Only a frame that drew hides the poster (BH2-3: a throw on frame 1 must leave the still and its message).
-      if (st.frames === 1) { hidePoster(); st.firstFrameMs = performance.now(); }
+      // A scene that returns false is still warming up (rain-window spreads its warm-up over frames, WR-1272): no picture yet.
+      if (!st.shown && drew !== false) { st.shown = true; hidePoster(); st.firstFrameMs = performance.now(); }
     } catch (e) { fail('The live scene stopped.', e); }
     if (!Number.isFinite(st.t)) st.finite = false;
   }
@@ -162,7 +165,7 @@ export function run(opts) {
   // picture catches up on return and a sound that played on follows it forward (BH2-2: before, the sync rewound the
   // fireplace voice by the whole hidden time and replayed its pops). A visitor's pause() freezes the clock.
   const liveT = () => st.t + (st.pausedAt ? (performance.now() - st.pausedAt) / 1000 : 0);
-  function shouldRun() { return st.started && st.visible && st.onScreen && !st.lost && !!st.scene; }
+  function shouldRun() { return st.started && st.visible && st.onScreen && !st.lost && !st.failed && !!st.scene; }
   function start() {
     if (st.running || !shouldRun()) return;
     st.t = liveT(); st.pausedAt = 0;

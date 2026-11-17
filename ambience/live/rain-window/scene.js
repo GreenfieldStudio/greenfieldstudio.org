@@ -179,7 +179,7 @@ const sim = createRain({ seed: 'rain-window', t0: startOffset(location.search) }
 // The pane is already wet at the first frame. 15 s fills the bead pool (full at ~10 s) and sends the first sliders down;
 // 45 s cost ~1.1 s of main thread here (~4.5 s on a 4x slower phone) (W12). It runs in init(), after the load event, so
 // the text and the poster paint first (W45: phone FCP); the poster stays up until the first live frame.
-let warmed = false;
+let warmed = false, warming = false;
 const grain = rng('rain-window-grain');
 const insts = new Float32Array(sim.maxPrims * FLOATS_PER_INSTANCE);
 window.WA_RAIN = { stats: () => sim.stats(), instanced: null };
@@ -195,7 +195,11 @@ run({
       // 1920x1080) started with its right third half as wet in every engine (W51).
       const r = gl.canvas.getBoundingClientRect();
       if (r.width > 0 && r.height > 0) sim.setAspect(r.width / r.height);
-      sim.warm(15); warmed = true;
+      // Production: warm in slices from frame() so the main thread is never blocked for seconds (WR-1272, PR 31 review).
+      // Test tools (?t0=, ?holdscale=1) need the finished picture on the first frame: they keep the one-shot warm-up.
+      const q = new URLSearchParams(location.search);
+      if (q.has('t0') || q.get('holdscale') === '1') { sim.warm(15); warming = false; } else { sim.warmBegin(15); warming = true; }
+      warmed = true;
     }
     const pBg = program(gl, FULLSCREEN_VS, BG_FS);
     const pDrop = program(gl, DROP_VS, DROP_FS);
@@ -230,7 +234,10 @@ run({
         hRT.resize(w, h);
       },
       frame(f) {
-        sim.step(f.dt);
+        if (warming) { // spread warm-up: no picture (the poster stays up) until the pane is wet; frame() returns false
+          if (!sim.warmSome(8)) return false;
+          warming = false;
+        } else sim.step(f.dt);
         const aspect = W / Hh;
         // (1) exterior
         bg.bind();
