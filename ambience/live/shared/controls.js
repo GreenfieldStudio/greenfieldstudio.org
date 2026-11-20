@@ -51,7 +51,7 @@ export function mountControls({ stage, wa = null, sound = null, doc = document, 
     say(st.paused ? 'Scene and sound paused.' : 'Scene resumed.');
     const scene = wa || win.WA;
     if (st.paused) { if (scene) scene.pause(); if (sound && sound.suspend) await sound.suspend(); }
-    else { if (scene) scene.start(); if (sound && sound.resume) await sound.resume(); }
+    else { if (scene) (scene.resume || scene.start).call(scene); if (sound && sound.resume) await sound.resume(); }
   }
 
   function toggleFullscreen() {

@@ -196,7 +196,7 @@ export function run(opts) {
 
   function begin() {
     if (st.started) return;
-    st.started = true;
+    st.started = true; st.begun = true;
     if (!st.scene && !initGL()) return;
     update();
   }
@@ -225,12 +225,16 @@ export function run(opts) {
     // Accelerated long-play for tests: advance n frames of dt seconds each, drawing every frame, without rAF.
     step(n, dt) {
       if (!st.scene) return api.health();
+      if (st.scene.finishWarm) st.scene.finishWarm(); // a sliced warm-up would swallow the first frames (WR-1272)
       for (let i = 0; i < n; i++) { st.t += dt; draw(dt); }
       return api.health();
     },
     // The live context for test tools (gputime.js); null on a fallback or while the context is lost.
     gl() { return st.gl && st.scene && !st.lost ? { gl: st.gl, version: st.version } : null; },
     start: begin,
+    // "Resume" after pause(): restarts only a scene that was started before, so under reduced motion / Save-Data it can
+    // never bypass the "Start the scene" button (WR-1272).
+    resume() { if (st.begun) begin(); },
     pause() { st.t = liveT(); st.pausedAt = 0; st.started = false; stop(); },
   };
   window.WA = api;

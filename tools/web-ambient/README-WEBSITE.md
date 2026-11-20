@@ -1,6 +1,6 @@
-# web-ambient hand-over 2026-11-17-rain
+# web-ambient hand-over 2026-11-18-rain
 
-Package `web-ambient-2026-11-17-rain`, built from web-ambient commit `6c7671a` (working tree had uncommitted changes).
+Package `web-ambient-2026-11-18-rain`, built from web-ambient commit `b226d68` (working tree had uncommitted changes).
 Live ambient scenes drawn in the browser by our own code (plain HTML/CSS/JS, raw WebGL, AudioWorklet; no build step,
 no libraries, no third-party requests). The CEO decides whether and when this is merged (merge = live).
 
@@ -12,7 +12,7 @@ and `site/links.json` at `/ambience/live/links.json`. All paths inside are relat
 
 ## Files
 
-27 files to publish (260.5 KB); 84 test-only files (`publish: false` in MANIFEST.json: tools/, site/selftest/, site/shared/gputime.js) stay off the site.
+28 files to publish (this README included, as the MANIFEST.json list; 261.8 KB); 84 test-only files (`publish: false` in MANIFEST.json: tools/, site/selftest/, site/shared/gputime.js) stay off the site.
 
 - `site/rain-window/`: Rain on the Cabin Window
 - Not in this package (later round): candlelit-study, fireplace, reef, snow-window; links.json and the hub list only the scenes above.
@@ -24,7 +24,7 @@ and `site/links.json` at `/ambience/live/links.json`. All paths inside are relat
 
 ### rain-window
 
-- Static load estimate (raw bytes, loadsize.mjs): 147.5 KB (budget 300.0 KB)
+- Static load estimate (raw bytes, loadsize.mjs): 148.3 KB (budget 300.0 KB)
 - Measured 2026-10-19 in Chrome/155.0.8059.80 (headless, this PC):
   - Transferred at load (phone emulation): 88.0 KB; folder on disk 256.6 KB
   - Phone FCP 0.88 s, first live frame 1.68 s (390x844 DPR 3, touch, CPU 4x, 1.6 Mbps / 750 Kbps / 150 ms, cache off)

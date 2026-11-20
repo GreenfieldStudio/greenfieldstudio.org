@@ -233,6 +233,7 @@ run({
         bg.resize(Math.ceil(w * bgScale), Math.ceil(h * bgScale));
         hRT.resize(w, h);
       },
+      finishWarm() { if (warming) { sim.warmSome(Infinity); warming = false; } }, // WA.step(): finish the warm-up at once
       frame(f) {
         if (warming) { // spread warm-up: no picture (the poster stays up) until the pane is wet; frame() returns false
           if (!sim.warmSome(8)) return false;

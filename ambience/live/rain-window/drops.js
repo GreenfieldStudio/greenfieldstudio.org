@@ -124,7 +124,7 @@ export function createRain(opts = {}) {
         if (sPath[i] - sSegPath[i] >= SEG_STEP) pushSegment(i);
         if (sPath[i] / PX >= sBeadPath[i]) { // a small bead stays behind on the trail
           const rb = sr[i] * (0.22 + 0.18 * rnd());
-          addBead(sx[i] + (rnd() - 0.5) * sr[i] * 0.6, sy[i] - (sr[i] + rb) * 1.15, rb, 99); // always lands (a full pool replaces an old bead)
+          addBead(sx[i] + (rnd() - 0.5) * sr[i] * 0.6, sy[i] - (sr[i] + rb) * 1.15, rb); // always lands (a full pool replaces an old bead); normal pinning size so it can merge, release and evaporate (WR-1272: crit 99 was in the wrong units)
           sr[i] = Math.cbrt(Math.max(0, sr[i] ** 3 - rb ** 3));
           sBeadPath[i] = sPath[i] / PX + 10 + 30 * rnd();
         }
@@ -245,7 +245,9 @@ export function createRain(opts = {}) {
     let finite = Number.isFinite(t);
     for (let i = 0; i < ns && finite; i++) finite = Number.isFinite(sx[i] + sy[i] + sr[i]);
     for (let j = 0; j < nb && finite; j++) finite = Number.isFinite(bx[j] + by[j] + br[j]);
-    return { t, aspect, beads: nb, thirds, sliders, segmentsLive: live, finite, counters: Object.assign({}, counters) };
+    let maxBeadPx = 0, maxCritPx = 0; // largest bead, and the largest pinning size (release threshold) of any bead, in 1080p px
+    for (let j = 0; j < nb; j++) { maxBeadPx = Math.max(maxBeadPx, br[j] / PX); maxCritPx = Math.max(maxCritPx, bCrit[j] / PX); }
+    return { t, aspect, beads: nb, maxBeadPx, maxCritPx, thirds, sliders, segmentsLive: live, finite, counters: Object.assign({}, counters) };
   }
 
   // Run the simulation for `seconds` before the first frame so the pane starts wet (coarse steps, 20 per second).

@@ -50,7 +50,7 @@ const SYNC_S = 15;
 // `mix` (optional): starting layer gains for a voice with setMix (rain-window mixer, W55); api.setMix() changes them live.
 export function mountSound({ el, worklet, processor, seed, volume = DEFAULT_VOLUME, clock, mix = null }) {
   const absWorklet = new URL(worklet, document.baseURI).href;
-  const st = { ctx: null, nodes: null, on: false, muted: false, volume, starting: null, mix, idleTimer: 0 };
+  const st = { ctx: null, nodes: null, on: false, muted: false, volume, starting: null, mix, idleTimer: 0, pausedAll: false };
   el.classList.add('wa-sound');
   const status = document.createElement('p');
   status.className = 'wa-sound-status';
@@ -87,7 +87,8 @@ export function mountSound({ el, worklet, processor, seed, volume = DEFAULT_VOLU
 
   async function start() {
     clearTimeout(st.idleTimer);
-    if (st.ctx) { await st.ctx.resume(); return; }
+    // After "Pause all" the context stays suspended until the visitor resumes (WR-1272: a Sound on tap must not un-pause).
+    if (st.ctx) { if (!st.pausedAll) await st.ctx.resume(); return; }
     // The AudioContext is created inside the tap handler (autoplay rules).
     st.ctx = new AudioContext({ latencyHint: 'playback' });
     try {
@@ -99,6 +100,7 @@ export function mountSound({ el, worklet, processor, seed, volume = DEFAULT_VOLU
       await ctx.close().catch(() => {});
       throw e;
     }
+    if (st.pausedAll) await st.ctx.suspend().catch(() => {});
     if (clock) {
       const sync = () => { if (st.nodes && !document.hidden) st.nodes.voice.port.postMessage({ sync: clock() }); };
       setInterval(sync, SYNC_S * 1000);
@@ -134,8 +136,8 @@ export function mountSound({ el, worklet, processor, seed, volume = DEFAULT_VOLU
     supported: true,
     toggle,
     // "Pause all" stops sound too (the hidden-tab rule keeps it playing otherwise).
-    async suspend() { if (st.ctx) await st.ctx.suspend(); },
-    async resume() { if (st.ctx && st.on) await st.ctx.resume(); },
+    async suspend() { st.pausedAll = true; clearTimeout(st.idleTimer); if (st.ctx) await st.ctx.suspend(); },
+    async resume() { st.pausedAll = false; if (st.ctx && st.on) await st.ctx.resume(); },
     // Mixer: kept for the next start and sent to a running voice.
     setMix(m) { st.mix = Object.assign({}, st.mix, m); if (st.nodes) st.nodes.voice.port.postMessage({ mix: st.mix }); },
     state: () => ({ supported: true, on: st.on, muted: st.muted, volume: st.volume, mix: st.mix,

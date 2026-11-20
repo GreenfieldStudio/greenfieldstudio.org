@@ -20,8 +20,14 @@ export function registerVoice(name, createVoice) {
     }
     process(inputs, outputs) {
       const out = outputs[0];
-      const L = out[0], R = out[1] || out[0];
-      this.voice.render(L, R, L.length);
+      const L = out[0];
+      if (out[1]) this.voice.render(L, out[1], L.length);
+      else { // mono output: render both channels into scratch and fold them (WR-1272: R must not overwrite L)
+        if (!this.scratch || this.scratch.length < L.length) this.scratch = new Float32Array(L.length);
+        const R = this.scratch.subarray(0, L.length);
+        this.voice.render(L, R, L.length);
+        for (let i = 0; i < L.length; i++) L[i] = 0.5 * (L[i] + R[i]);
+      }
       return this.alive;
     }
   });
