@@ -49,7 +49,7 @@ for (const e of existsSync(join(SITE, 'ambience')) ? readdirSync(join(SITE, 'amb
 // not turn the run red as a "stray" file (WR-654, WS-04).
 if (LIST) { console.log(PAGES.map(([f]) => f).join('\n')); process.exit(0); }
 
-const YT_STUDIO ='https://www.youtube.com/@Greenfield.Studio';
+const YT_STUDIO = 'https://www.youtube.com/@Greenfield.Studio';
 const YT_AMBIENCE = 'https://www.youtube.com/@Greenfield.Ambience';
 const ITCH = 'https://greenfieldstudio.itch.io/minigolf-pro'; // the game's page: the bare profile has no bio and one game
 
