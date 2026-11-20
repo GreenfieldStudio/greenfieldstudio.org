@@ -124,7 +124,8 @@ test('thumbnails (ffmpegWebp, the sync-shorts / sync-ambience entry): a failed c
 
 test('pruneThumbs removes `.new` leftovers of a killed write, even for a listed film (WS-08), and keeps real files', async () => withDir((d) => {
   const id = 'abcdefghijk', gone = 'zzzzzzzzzzz';
-  for (const f of [`${id}-1280.webp`, `${id}-640.webp`, `${id}-og.jpg`, `${id}-1280.webp.new`, `${id}.new.webp`, `${id}-og.new.jpg`, `${gone}-640.webp`, 'films.json', 'coming-reef-640.webp']) writeFileSync(join(d, f), 'x');
+  for (const f of [`${id}-1280.webp`, `${id}-640.webp`, `${id}-og.jpg`, `${id}-1280.webp.new`, `${id}.new.webp`, `${id}-og.new.jpg`, `${gone}-640.webp`, 'films.json', 'coming-reef-640.webp',
+    'films.new.json', 'coming-reef-640.new.webp', 'shorts.new.json']) writeFileSync(join(d, f), 'x');
   pruneThumbs(d, [id, 'coming-reef']);
   assert.deepEqual(names(d), ['coming-reef-640.webp', 'films.json', `${id}-1280.webp`, `${id}-640.webp`, `${id}-og.jpg`].sort());
 }));
@@ -133,11 +134,27 @@ test('a removed film keeps its slug reserved: a new film with the same title get
   const db = { films: [{ id: 'aaaaaaaaaaa', title: 'Old Cabin Film', slug: 'old-cabin-film' }] };
   removeFilm(db, 'aaaaaaaaaaa');
   assert.deepEqual(db.films, []);
-  assert.deepEqual(db.removedSlugs, ['old-cabin-film']);
+  assert.deepEqual(db.removedSlugs, { 'old-cabin-film': 'aaaaaaaaaaa' });
   db.films.push({ id: 'bbbbbbbbbbb', title: 'Old Cabin Film' });
   ensureSlugs(db);
   assert.equal(db.films[0].slug, 'old-cabin-film-2');
-  assert.deepEqual(db.removedSlugs, ['old-cabin-film'], 'the tombstone stays');
+  assert.deepEqual(db.removedSlugs, { 'old-cabin-film': 'aaaaaaaaaaa' }, 'the tombstone stays');
+});
+
+test('the SAME film coming back (private -> public) gets its own slug back, so the old link works again', () => {
+  const db = { films: [{ id: 'aaaaaaaaaaa', title: 'Old Cabin Film', slug: 'old-cabin-film' }] };
+  removeFilm(db, 'aaaaaaaaaaa');
+  db.films.push({ id: 'aaaaaaaaaaa', title: 'Old Cabin Film' });
+  assert.equal(ensureSlugs(db), 1);
+  assert.equal(db.films[0].slug, 'old-cabin-film');
+  assert.equal(db.removedSlugs, undefined, 'reclaimed: the tombstone is gone');
+});
+
+test('every page and data file the sync tools write goes through writeFileAtomic (no bare writeFileSync left)', () => {
+  for (const f of ['sync-ambience.mjs', 'sync-shorts.mjs', 'sync-chrome.mjs', 'refresh-videos.mjs', 'make-media.mjs', 'lib/film-pages.mjs', 'lib/media.mjs']) {
+    const src = readFileSync(join(TOOLS, f), 'utf8');
+    assert.doesNotMatch(src, /\b(?:writeFileSync|copyFileSync)\(/, `${f} writes a served file in place`);
+  }
 });
 
 // ── W-2 ────────────────────────────────────────────────────────────────────────
@@ -224,6 +241,24 @@ test('daily workflow: the commit step stages the chrome pages and pushes again a
   assert.deepEqual(log, ['Refresh films and Shorts from YouTube', 'PR merged', 'base']);
   assert.match(git(remote, 'show', 'main:wallpapers/index.html'), /v2/, 'the allowed chrome page was committed');
   assert.match(git(remote, 'show', 'main:README.md'), /PR merged/, 'main kept the other commit');
+}));
+
+test('daily workflow: a rebase conflict (a PR changed a generated file) stops cleanly: not half-rebased, main untouched', { skip: !BASH && 'no real bash' }, async () => withDir((d) => {
+  const repo = fixtureRepo(d);
+  const remote = join(d, 'remote.git');
+  git(d, 'init', '-q', '--bare', '-b', 'main', remote);
+  git(repo, 'remote', 'add', 'origin', posix(remote));
+  git(repo, 'push', '-q', 'origin', 'main');
+  const other = join(d, 'other');
+  git(d, 'clone', '-q', posix(remote), other);
+  writeFileSync(join(other, 'index.html'), 'edited by a merged PR\n');
+  git(other, 'add', '-A'); git(other, 'commit', '-q', '-m', 'PR merged'); git(other, 'push', '-q', 'origin', 'main');
+  writeFileSync(join(repo, 'index.html'), 'edited by the refresh\n');
+  const r = sh(repo, stepScript('Commit the refreshed lists to main'));
+  assert.notEqual(r.status, 0, 'the run is red, the next daily run retries');
+  const gitDir = join(repo, '.git');
+  assert.equal(['rebase-merge', 'rebase-apply'].some((n) => existsSync(join(gitDir, n))), false, 'nothing half-finished');
+  assert.deepEqual(git(remote, 'log', '--format=%s', 'main').trim().split('\n'), ['PR merged', 'base']);
 }));
 
 let failed = 0;

@@ -11,7 +11,7 @@
  * reason). "Last successful refresh" is kept per feed in tools/videos-last-ok.json, moved (at most once
  * a day) whenever that feed was read; it is not part of the site (tools/ is never published).
  */
-import { readFileSync, writeFileSync, appendFileSync, existsSync } from 'node:fs';
+import { readFileSync, appendFileSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';

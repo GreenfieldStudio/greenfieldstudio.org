@@ -2,7 +2,7 @@
 // old complete one or the new complete one, never a half-written or empty one, and no temp file stays.
 // The temp file is `<stem>.new<ext>` in the SAME folder (so the rename never crosses a disk, and ffmpeg
 // can still pick its muxer from the extension): hero-loop.webm -> hero-loop.new.webm.
-import { closeSync, existsSync, fsyncSync, openSync, renameSync, rmSync, statSync, writeSync } from 'node:fs';
+import { closeSync, existsSync, fsyncSync, openSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { extname } from 'node:path';
 
 /** The temp name beside `out`: `a/b.webp` -> `a/b.new.webp`. */
@@ -17,8 +17,8 @@ function flush(path) {
 export function writeFileAtomic(path, data) {
   const tmp = tmpPath(path);
   try {
-    const fd = openSync(tmp, 'w');
-    try { writeSync(fd, data); fsyncSync(fd); } finally { closeSync(fd); }
+    writeFileSync(tmp, data); // loops until every byte is written
+    flush(tmp);
     renameSync(tmp, path);
   } finally {
     rmSync(tmp, { force: true }); // after a successful rename this is a no-op

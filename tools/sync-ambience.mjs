@@ -15,7 +15,7 @@
  * `<!-- upcoming:start -->` / `-end -->` (each until its go-live time). The daily GitHub Action (.github/workflows/videos.yml)
  * runs this, so a film shows up on the site by itself; run it by hand to see the result sooner.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { strictOptions } from './lib/args.mjs';
@@ -223,9 +223,9 @@ if (CHECK) {
   }
   process.exit(0);
 }
-writeFileSync(PAGE, matchEol(html, before));
-writeFileSync(PRIVACY, matchEol(privacyAfter, privacyBefore));
-writeFileSync(WALLPAPERS, matchEol(wallpapersAfter, wallpapersBefore));
+writeFileAtomic(PAGE, matchEol(html, before));
+writeFileAtomic(PRIVACY, matchEol(privacyAfter, privacyBefore));
+writeFileAtomic(WALLPAPERS, matchEol(wallpapersAfter, wallpapersBefore));
 syncFilmPages({ site: SITE, db, cfgFile: CFG, check: false });
 // the film pages get the shared menu and footer from tools/sync-chrome.mjs
 const chrome = spawnSync(process.execPath, [join(SITE, 'tools', 'sync-chrome.mjs')], { encoding: 'utf8' });

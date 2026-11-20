@@ -230,9 +230,9 @@ export async function isGone(id) {
 /** Delete thumbnails in `dir` whose name starts with an id that is no longer listed (files that match no id are left alone), and any `.new` temp leftover. */
 export function pruneThumbs(dir, keepIds) {
   for (const f of readdirSync(dir)) {
-    // the leftovers of a killed write (`<id>-1280.webp.new` from refreshThumb, `<id>.new.webp` from atomic.mjs) always go,
-    // listed film or not: they are never a published file (WR-654, W-3)
-    if (/^[A-Za-z0-9_-]{11}(?:-(?:\d+|og))?(?:\.new\.(?:webp|jpg)|\.(?:webp|jpg)(?:\.new)+)$/.test(f)) { rmSync(join(dir, f), { force: true }); continue; }
+    // the leftovers of a killed write always go, whatever the name or the film: `x.webp.new` (refreshThumb), `x.new.webp`,
+    // `films.new.json` (atomic.mjs). A `.new` part is never a published file (WR-654, W-3)
+    if (/\.new(?:\.[A-Za-z0-9]+)?$/.test(f)) { rmSync(join(dir, f), { force: true }); continue; }
     const id = /^([A-Za-z0-9_-]{11})(?:-(?:\d+|og))?\.(?:webp|jpg)$/.exec(f)?.[1];
     if (id && !keepIds.includes(id)) rmSync(join(dir, f), { force: true });
   }

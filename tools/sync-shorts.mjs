@@ -12,7 +12,7 @@
  * between `<!-- shorts:start -->` / `<!-- shorts:end -->` in index.html; with no Short public the
  * whole section leaves the page.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { strictOptions } from './lib/args.mjs';
@@ -107,5 +107,5 @@ if (CHECK) {
   }
   process.exit(0);
 }
-writeFileSync(PAGE, matchEol(html, before));
+writeFileAtomic(PAGE, matchEol(html, before));
 console.log(`sync-shorts: ${db.shorts.length} Short(s)${db.shorts.length ? ': ' + db.shorts.map((s) => s.title).join(' | ') : ' (section removed)'}`);

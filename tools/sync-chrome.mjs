@@ -11,7 +11,8 @@
  * the page (404.html uses root-absolute ones, because Pages serves it at any depth) and
  * aria-current on the page's own section. Add a new page to PAGES.
  */
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { writeFileAtomic } from './lib/atomic.mjs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { strictOptions } from './lib/args.mjs';
@@ -152,7 +153,7 @@ for (const [file, prefix, section] of PAGES) {
   if (after.replace(/\r/g, '') === before.replace(/\r/g, '')) continue;
   stale++;
   if (CHECK) console.error(`out of date: ${file}`);
-  else writeFileSync(path, after);
+  else writeFileAtomic(path, after);
 }
 if (CHECK && stale) { console.error('run: node tools/sync-chrome.mjs'); process.exit(1); }
 console.log(CHECK ? 'menus and footers are in sync' : `sync-chrome: ${stale} page(s) updated`);
