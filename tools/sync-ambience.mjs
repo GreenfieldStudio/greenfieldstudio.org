@@ -20,7 +20,8 @@ import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { strictOptions } from './lib/args.mjs';
 import { readFeed, dropDuplicateEntries, FeedUnavailableError, feedOutage, refreshThumbSafe, thumbSkipSummary, lengthSeconds, isGone, pruneThumbs, esc, clock, matchEol } from './lib/youtube.mjs';
-import { displayTitle, ensureSlugs, secondsOf, syncFilmPages, gateCfg, passIdsNear, softenTitle, firstLine, ownText, LOOP_WORDS, HEALTH_WORDS } from './lib/film-pages.mjs';
+import { writeFileAtomic } from './lib/atomic.mjs';
+import { displayTitle, ensureSlugs, removeFilm, secondsOf, syncFilmPages, gateCfg, passIdsNear, softenTitle, firstLine, ownText, LOOP_WORDS, HEALTH_WORDS } from './lib/film-pages.mjs';
 import { spawnSync } from 'node:child_process';
 import { signupSection, privacyBlock, privacyDate } from './signup.mjs';
 
@@ -80,14 +81,14 @@ if (!OFFLINE) {
   // The feed only reaches back ~15 videos, so a film missing from it is not necessarily gone. Ask
   // YouTube about each one before it leaves the site (made private or deleted); otherwise it stays.
   for (const k of db.films.filter((k) => !entries.some((f) => f.id === k.id))) {
-    if (await isGone(k.id)) { console.log(`sync-ambience: ${k.id} is no longer public; removing it`); db.films = db.films.filter((x) => x.id !== k.id); }
+    if (await isGone(k.id)) { console.log(`sync-ambience: ${k.id} is no longer public; removing it`); removeFilm(db, k.id); }
   }
   pruneThumbs(DIR, [...db.films.map((f) => f.id), 'coming-reef']); // coming-reef-*.webp is the no-film placeholder
   ensureSlugs(db); // a film the feed just brought in has no slug yet: without this its card links to "undefined/"
   db.films.sort((a, b) => (a.published < b.published ? 1 : a.published > b.published ? -1 : 0));
-  writeFileSync(DB, JSON.stringify(db, null, 2) + '\n');
+  writeFileAtomic(DB, JSON.stringify(db, null, 2) + '\n');
 } else if (!CHECK && slugsAdded) {
-  writeFileSync(DB, JSON.stringify(db, null, 2) + '\n'); // --offline still records new slugs
+  writeFileAtomic(DB, JSON.stringify(db, null, 2) + '\n'); // --offline still records new slugs
 }
 
 // Only what the film's own description states: "4K" and the frame rate.

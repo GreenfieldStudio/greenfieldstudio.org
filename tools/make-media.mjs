@@ -15,8 +15,9 @@
  * the sibling checkout ../minigolf-pro. The media-kit video is gitignored in that repo,
  * so it only exists in a checkout where it was rendered (branding/mediakit/README.md).
  */
-import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, statSync, copyFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, statSync, readdirSync } from 'node:fs';
+import { ffmpegTo, copyTo, zipTo } from './lib/media.mjs';
+import { writeFileAtomic } from './lib/atomic.mjs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -44,8 +45,8 @@ function stale(src, out) {
 function ff(src, out, args, { inputArgs = [] } = {}) {
   if (!existsSync(src)) { console.warn(`  ! missing source ${src}`); missing++; return; }
   if (!stale(src, out)) { skipped++; return; }
-  const r = spawnSync('ffmpeg', ['-v', 'error', '-y', ...inputArgs, '-i', src, ...args, out], { stdio: 'inherit' });
-  if (r.status !== 0) { console.error(`ffmpeg failed for ${out}`); process.exit(1); }
+  // atomic (WR-654): a failed ffmpeg leaves the old file as it was, no 0-byte output at the final name
+  if (!ffmpegTo(src, out, args, { inputArgs })) { console.error(`ffmpeg failed for ${out}`); process.exit(1); }
   built++;
   console.log(`  + ${out.slice(SITE.length + 1)}  ${(statSync(out).size / 1024).toFixed(0)} KB`);
 }
@@ -53,7 +54,7 @@ function ff(src, out, args, { inputArgs = [] } = {}) {
 function copy(src, out) {
   if (!existsSync(src)) { console.warn(`  ! missing source ${src}`); missing++; return; }
   if (!stale(src, out)) { skipped++; return; }
-  copyFileSync(src, out);
+  copyTo(src, out);
   built++;
   console.log(`  + ${out.slice(SITE.length + 1)}  ${(statSync(out).size / 1024).toFixed(0)} KB (copy)`);
 }
@@ -192,18 +193,14 @@ All assets in this archive are free to use in coverage, reviews, videos and stre
 of Minigolf Pro.
 `;
   const aboutPath = PRESS('ABOUT.txt');
-  writeFileSync(aboutPath, about.replace(/\n/g, '\r\n')); // CRLF: it will mostly be opened in Notepad
+  writeFileAtomic(aboutPath, about.replace(/\n/g, '\r\n')); // CRLF: it will mostly be opened in Notepad
   const zip = join(SITE, 'press', 'greenfield-studio-presskit.zip');
   const members = ['ABOUT.txt', ...Object.keys(PRESS_FILES).filter((f) => !f.endsWith('.mp4'))];
   const newest = Math.max(...members.filter((f) => f !== 'ABOUT.txt').map((f) => statSync(PRESS(f)).mtimeMs));
   if (FORCE || !existsSync(zip) || statSync(zip).mtimeMs < newest) {
-    rmSync(zip, { force: true });
     // Windows 10+ ships bsdtar, which writes zip when the name ends in .zip; elsewhere use zip(1).
-    const bsdtar = 'C:/Windows/System32/tar.exe';
-    const r = existsSync(bsdtar)
-      ? spawnSync(bsdtar, ['-a', '-c', '-f', zip, '-C', PRESS(''), ...members], { stdio: 'inherit' })
-      : spawnSync('zip', ['-q', '-j', zip, ...members.map((m) => PRESS(m))], { stdio: 'inherit' });
-    if (r.status !== 0 || !existsSync(zip)) { console.error('could not write the press zip (needs Windows tar.exe or zip)'); process.exit(1); }
+    // Built beside the old zip and renamed over it (WR-654): a failed or killed run keeps the old zip.
+    if (!zipTo(zip, PRESS(''), members)) { console.error('could not write the press zip (needs Windows tar.exe or zip)'); process.exit(1); }
     built++;
     console.log(`  + press/greenfield-studio-presskit.zip  ${(statSync(zip).size / 1048576).toFixed(1)} MB`);
   } else {

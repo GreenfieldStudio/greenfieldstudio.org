@@ -16,8 +16,9 @@ import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { strictOptions } from './lib/args.mjs';
 
-strictOptions(['check']);
+strictOptions(['check', 'list']);
 const CHECK = process.argv.includes('--check');
+const LIST = process.argv.includes('--list');
 const SITE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 // file → [prefix to the site root, section it belongs to]
@@ -43,7 +44,12 @@ for (const e of existsSync(join(SITE, 'ambience')) ? readdirSync(join(SITE, 'amb
   if (e.isDirectory() && existsSync(join(SITE, 'ambience', e.name, 'index.html'))) PAGES.push([`ambience/${e.name}/index.html`, '../../', 'ambience']);
 }
 
-const YT_STUDIO = 'https://www.youtube.com/@Greenfield.Studio';
+// --list: the pages this tool may rewrite, one per line. The daily workflow (.github/workflows/videos.yml) reads it, because
+// sync-ambience runs this tool: a footer drift committed to any of these pages is rewritten by the daily refresh and must
+// not turn the run red as a "stray" file (WR-654, WS-04).
+if (LIST) { console.log(PAGES.map(([f]) => f).join('\n')); process.exit(0); }
+
+const YT_STUDIO ='https://www.youtube.com/@Greenfield.Studio';
 const YT_AMBIENCE = 'https://www.youtube.com/@Greenfield.Ambience';
 const ITCH = 'https://greenfieldstudio.itch.io/minigolf-pro'; // the game's page: the bare profile has no bio and one game
 

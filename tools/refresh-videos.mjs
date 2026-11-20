@@ -16,6 +16,7 @@ import { spawnSync } from 'node:child_process';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runRefresh } from './lib/refresh.mjs';
+import { writeFileAtomic } from './lib/atomic.mjs';
 
 const TOOLS = dirname(fileURLToPath(import.meta.url));
 const STAMP = join(resolve(TOOLS), 'videos-last-ok.json');
@@ -27,7 +28,7 @@ const code = await runRefresh({
     { key: 'shorts', name: 'Greenfield Studio', run: sync('sync-shorts.mjs') },
   ],
   readStamp: () => (existsSync(STAMP) ? readFileSync(STAMP, 'utf8') : null),
-  writeStamp: (text) => writeFileSync(STAMP, text),
+  writeStamp: (text) => writeFileAtomic(STAMP, text),
   now: Date.now(),
   log: (line) => console.log(line),
   summary: (md) => { if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, md + '\n'); else console.log(md); },

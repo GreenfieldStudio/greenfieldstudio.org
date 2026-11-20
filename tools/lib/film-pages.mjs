@@ -9,6 +9,7 @@
 //   - length, 4K and frame rate are read from the title and description, like the film cards.
 // "No Loops" is the one claim a description can make that only a test can back up, so a page shows
 // it ONLY when tools/film-pages.json carries the repeat-check record for that film's id.
+import { publishAtomic } from './atomic.mjs';
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -46,9 +47,17 @@ const shortName = (t) => t.split(/\s+[|·—–]\s+/)[0].replace(/\s+4K(\s+60\s*
 
 export const slugify = (s) => s.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48).replace(/-+$/, '') || 'film';
 
+/** Remove a film from the list and keep its slug reserved (see ensureSlugs). */
+export function removeFilm(db, id) {
+  const gone = db.films.find((f) => f.id === id);
+  db.films = db.films.filter((f) => f.id !== id);
+  if (gone?.slug) db.removedSlugs = [...new Set([...(db.removedSlugs || []), gone.slug])].sort();
+}
+
 /** Give every film a slug that never changes once it has one (so shared links keep working). */
 export function ensureSlugs(db) {
-  const taken = new Set(db.films.map((f) => f.slug).filter(Boolean));
+  // removedSlugs: slugs of films that left the site stay reserved, so an old shared link never shows a different film (WR-654, WS-07)
+  const taken = new Set([...db.films.map((f) => f.slug), ...(db.removedSlugs || [])].filter(Boolean));
   let added = 0;
   for (const f of db.films) {
     if (f.slug) continue;
@@ -393,8 +402,8 @@ export const mask = (html) => html.replace(/\r/g, '')
 function makeOg(dir, id) {
   const out = join(dir, `${id}-og.jpg`);
   if (existsSync(out)) return true;
-  const x = spawnSync('ffmpeg', ['-v', 'error', '-y', '-i', join(dir, `${id}-1280.webp`), '-vf', 'scale=1200:630:force_original_aspect_ratio=increase,crop=1200:630', '-q:v', '3', out]);
-  return x.status === 0;
+  // atomic: a failed or killed ffmpeg must not leave a truncated -og.jpg that existsSync() then treats as done (WR-654, W-3)
+  return publishAtomic(out, (tmp) => spawnSync('ffmpeg', ['-v', 'error', '-y', '-i', join(dir, `${id}-1280.webp`), '-vf', 'scale=1200:630:force_original_aspect_ratio=increase,crop=1200:630', '-q:v', '3', tmp]).status === 0);
 }
 
 /** Ids with a film_gate PASS row (film-gate-pass.json next to the config); none if the file is missing. */

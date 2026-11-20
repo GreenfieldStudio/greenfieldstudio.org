@@ -16,6 +16,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { strictOptions } from './lib/args.mjs';
+import { writeFileAtomic } from './lib/atomic.mjs';
 import { readFeed, FeedUnavailableError, feedOutage, webp, pruneThumbs, esc, matchEol } from './lib/youtube.mjs';
 
 strictOptions(['offline', 'check']);
@@ -71,7 +72,7 @@ if (!OFFLINE) {
   }
   db.shorts = next;
   pruneThumbs(DIR, next.map((s) => s.id));
-  writeFileSync(DB, JSON.stringify(db, null, 2) + '\n');
+  writeFileAtomic(DB, JSON.stringify(db, null, 2) + '\n');
 }
 
 const PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4.5 2.6v10.8l8.8-5.4z" fill="currentColor"/></svg>';

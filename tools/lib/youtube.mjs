@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { publishAtomic } from './atomic.mjs';
 
 export const UA = { 'user-agent': 'Mozilla/5.0 (greenfieldstudio.org video sync)', 'accept-language': 'en' };
 
@@ -118,14 +119,20 @@ export async function webp(url, out, vf) {
 }
 
 /** Convert image bytes to a WebP file with an ffmpeg filter; true when ffmpeg succeeded. */
-export function ffmpegWebp(buf, out, vf) {
+export function ffmpegWebp(buf, out, vf, run = spawnSync) {
   const tmp = join(tmpdir(), `gs-thumb-${process.pid}.jpg`);
   writeFileSync(tmp, buf);
-  const x = spawnSync('ffmpeg', webpArgs(tmp, out, vf));
-  rmSync(tmp, { force: true });
-  // say why: a silent false made the WR-121 failure undiagnosable ("no thumbnail" with no cause)
-  if (x.status !== 0) console.error(`ffmpeg webp conversion failed for ${out}: ${x.error ? x.error.message : String(x.stderr || '').trim().slice(0, 300)}`);
-  return x.status === 0;
+  try {
+    // ffmpeg writes a temp file beside `out`; only a clean exit and a non-empty file replace it (WR-654, W-3)
+    return publishAtomic(out, (tmpOut) => {
+      const x = run('ffmpeg', webpArgs(tmp, tmpOut, vf));
+      // say why: a silent false made the WR-121 failure undiagnosable ("no thumbnail" with no cause)
+      if (x.status !== 0) console.error(`ffmpeg webp conversion failed for ${out}: ${x.error ? x.error.message : String(x.stderr || '').trim().slice(0, 300)}`);
+      return x.status === 0;
+    });
+  } finally {
+    rmSync(tmp, { force: true });
+  }
 }
 
 /**
@@ -220,9 +227,12 @@ export async function isGone(id) {
   } catch (_) { return false; }
 }
 
-/** Delete thumbnails in `dir` whose name starts with an id that is no longer listed (files that match no id are left alone). */
+/** Delete thumbnails in `dir` whose name starts with an id that is no longer listed (files that match no id are left alone), and any `.new` temp leftover. */
 export function pruneThumbs(dir, keepIds) {
   for (const f of readdirSync(dir)) {
+    // the leftovers of a killed write (`<id>-1280.webp.new` from refreshThumb, `<id>.new.webp` from atomic.mjs) always go,
+    // listed film or not: they are never a published file (WR-654, W-3)
+    if (/^[A-Za-z0-9_-]{11}(?:-(?:\d+|og))?(?:\.new\.(?:webp|jpg)|\.(?:webp|jpg)(?:\.new)+)$/.test(f)) { rmSync(join(dir, f), { force: true }); continue; }
     const id = /^([A-Za-z0-9_-]{11})(?:-(?:\d+|og))?\.(?:webp|jpg)$/.exec(f)?.[1];
     if (id && !keepIds.includes(id)) rmSync(join(dir, f), { force: true });
   }
