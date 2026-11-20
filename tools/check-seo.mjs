@@ -15,7 +15,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { metaDescription, bumpLastmod } from './lib/film-pages.mjs';
+import { metaDescription, bumpLastmod, secondsOf } from './lib/film-pages.mjs';
 
 const SITE = fileURLToPath(new URL('..', import.meta.url));
 const read = (p) => readFileSync(join(SITE, p), 'utf8');
@@ -119,6 +119,13 @@ test('every JSON-LD block on every page parses', () => {
   };
   walk('.');
   assert.ok(n > 0, 'no JSON-LD block found at all');
+});
+
+// WR-1302: a film with neither "seconds" in films.json nor "N hours" in its title has no length, so its page has no
+// VideoObject duration. The daily refresh reads the length from the YouTube watch page and can fail at it; this names
+// the cause (films.json) rather than only the page symptom below.
+test('every public film has a length: "seconds" in films.json or "N hours" in its title', () => {
+  for (const f of films) assert.ok(secondsOf(f) > 0, `${f.slug}: films.json has no "seconds" and the title names no hours; add the length from the film's master (KNOWLEDGE/FILM-CLAIMS-REGISTER.md)`);
 });
 
 test('every film page has a complete VideoObject', () => {
