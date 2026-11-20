@@ -445,7 +445,7 @@ export function syncFilmPages({ site, db, cfgFile, check }) {
       const nav = have.match(/<nav class="nav" aria-label="Main">[\s\S]*?<\/nav>/), foot = have.match(/<footer class="site-footer">[\s\S]*?<\/footer>/);
       if (nav) keep = keep.replace('<nav class="nav" aria-label="Main"></nav>', () => nav[0]);
       if (foot) keep = keep.replace('<footer class="site-footer"></footer>', () => foot[0]);
-      if (mask(have) !== mask(keep) || !have) writeFileAtomic(page,matchEol(keep, have || '\n'));
+      if (mask(have) !== mask(keep) || !have) writeFileAtomic(page, matchEol(keep, have || '\n'));
     }
   }
   // pages of films that left the site

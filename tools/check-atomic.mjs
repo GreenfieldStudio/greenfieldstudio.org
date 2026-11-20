@@ -151,9 +151,16 @@ test('the SAME film coming back (private -> public) gets its own slug back, so t
 });
 
 test('every page and data file the sync tools write goes through writeFileAtomic (no bare writeFileSync left)', () => {
-  for (const f of ['sync-ambience.mjs', 'sync-shorts.mjs', 'sync-chrome.mjs', 'refresh-videos.mjs', 'make-media.mjs', 'lib/film-pages.mjs', 'lib/media.mjs']) {
-    const src = readFileSync(join(TOOLS, f), 'utf8');
-    assert.doesNotMatch(src, /\b(?:writeFileSync|copyFileSync)\(/, `${f} writes a served file in place`);
+  // every tool and lib file, not a named list: a new writer is caught too. Not scanned: the tests themselves, the helper that
+  // implements the atomic write, the dev-run tools that are no part of the daily refresh (deploy, game sync, banner), and
+  // youtube.mjs, whose one bare write is the INPUT jpg in the OS temp folder (its served outputs go through publishAtomic).
+  const SKIP = new Set(['lib/atomic.mjs','deploy.mjs', 'sync-game.mjs', 'make-banner.mjs', 'lib/youtube.mjs']);
+  const all = [...readdirSync(TOOLS).filter((n) => n.endsWith('.mjs')), ...readdirSync(join(TOOLS, 'lib')).filter((n) => n.endsWith('.mjs')).map((n) => `lib/${n}`)];
+  const scanned = all.filter((n) => !/^check-/.test(n) && !SKIP.has(n));
+  for (const must of ['sync-ambience.mjs', 'sync-shorts.mjs', 'sync-chrome.mjs', 'refresh-videos.mjs', 'make-media.mjs', 'lib/film-pages.mjs', 'lib/media.mjs', 'lib/refresh.mjs']) assert.ok(scanned.includes(must), `${must} is not scanned`);
+  for (const f of scanned) {
+    const src = readFileSync(join(TOOLS, f), 'utf8').split('\n').filter((l) => !/^\s*(?:\/\/|\*|\/\*)/.test(l)).join('\n'); // not the comments
+    assert.doesNotMatch(src, /\b(?:writeFileSync|copyFileSync|cpSync|appendFileSync)\((?!process\.env\.GITHUB_STEP_SUMMARY)/, `${f} writes a served file in place`);
   }
 });
 
@@ -241,6 +248,17 @@ test('daily workflow: the commit step stages the chrome pages and pushes again a
   assert.deepEqual(log, ['Refresh films and Shorts from YouTube', 'PR merged', 'base']);
   assert.match(git(remote, 'show', 'main:wallpapers/index.html'), /v2/, 'the allowed chrome page was committed');
   assert.match(git(remote, 'show', 'main:README.md'), /PR merged/, 'main kept the other commit');
+}));
+
+test('daily workflow: when `sync-chrome --list` fails the commit step stops, no commit is made (no silent unstaged chrome pages)', { skip: !BASH && 'no real bash' }, async () => withDir((d) => {
+  const repo = fixtureRepo(d);
+  writeFileSync(join(repo, 'wallpapers/index.html'), 'v2\n');
+  writeFileSync(join(repo, 'index.html'), 'v2\n'); // staged by the fixed `git add`, so a commit WOULD succeed if the step carried on
+  rmSync(join(repo, 'tools', 'sync-chrome.mjs')); // node cannot run it: exit 1, nothing on stdout
+  const before = git(repo, 'rev-parse', 'HEAD');
+  const r = sh(repo, stepScript('Commit the refreshed lists to main'));
+  assert.notEqual(r.status, 0, 'the step must fail, not carry on without the chrome pages');
+  assert.equal(git(repo, 'rev-parse', 'HEAD'), before, 'nothing was committed');
 }));
 
 test('daily workflow: a rebase conflict (a PR changed a generated file) stops cleanly: not half-rebased, main untouched', { skip: !BASH && 'no real bash' }, async () => withDir((d) => {
