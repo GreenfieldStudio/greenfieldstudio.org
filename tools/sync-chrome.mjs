@@ -11,13 +11,15 @@
  * the page (404.html uses root-absolute ones, because Pages serves it at any depth) and
  * aria-current on the page's own section. Add a new page to PAGES.
  */
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { writeFileAtomic } from './lib/atomic.mjs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { strictOptions } from './lib/args.mjs';
 
-strictOptions(['check']);
+strictOptions(['check', 'list']);
 const CHECK = process.argv.includes('--check');
+const LIST = process.argv.includes('--list');
 const SITE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 // file → [prefix to the site root, section it belongs to]
@@ -42,6 +44,11 @@ const PAGES = [
 for (const e of existsSync(join(SITE, 'ambience')) ? readdirSync(join(SITE, 'ambience'), { withFileTypes: true }) : []) {
   if (e.isDirectory() && existsSync(join(SITE, 'ambience', e.name, 'index.html'))) PAGES.push([`ambience/${e.name}/index.html`, '../../', 'ambience']);
 }
+
+// --list: the pages this tool may rewrite, one per line. The daily workflow (.github/workflows/videos.yml) reads it, because
+// sync-ambience runs this tool: a footer drift committed to any of these pages is rewritten by the daily refresh and must
+// not turn the run red as a "stray" file (WR-654, WS-04).
+if (LIST) { console.log(PAGES.map(([f]) => f).join('\n')); process.exit(0); }
 
 const YT_STUDIO = 'https://www.youtube.com/@Greenfield.Studio';
 const YT_AMBIENCE = 'https://www.youtube.com/@Greenfield.Ambience';
@@ -146,7 +153,7 @@ for (const [file, prefix, section] of PAGES) {
   if (after.replace(/\r/g, '') === before.replace(/\r/g, '')) continue;
   stale++;
   if (CHECK) console.error(`out of date: ${file}`);
-  else writeFileSync(path, after);
+  else writeFileAtomic(path, after);
 }
 if (CHECK && stale) { console.error('run: node tools/sync-chrome.mjs'); process.exit(1); }
 console.log(CHECK ? 'menus and footers are in sync' : `sync-chrome: ${stale} page(s) updated`);
