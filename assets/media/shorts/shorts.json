@@ -1,6 +1,11 @@
 {
   "shorts": [
     {
+      "id": "J1DiQTbiZQs",
+      "title": "one shot. one portal. in.",
+      "published": "2026-11-24"
+    },
+    {
       "id": "zF09lr7vlCI",
       "title": "i taught my bot to lose. it broke.",
       "published": "2026-10-09"
@@ -24,11 +29,6 @@
       "id": "loFylygPQdU",
       "title": "bugs i had to fix in my coral reef",
       "published": "2026-09-28"
-    },
-    {
-      "id": "Wk0LRQSWAFs",
-      "title": "100 beginners vs 100 bots. same hole.",
-      "published": "2026-09-26"
     }
   ]
 }
