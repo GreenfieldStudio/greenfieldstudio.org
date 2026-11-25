@@ -1,6 +1,11 @@
 {
   "shorts": [
     {
+      "id": "qCVZgaGmokc",
+      "title": "the champ took 3. can you beat it?",
+      "published": "2026-11-25"
+    },
+    {
       "id": "J1DiQTbiZQs",
       "title": "one shot. one portal. in.",
       "published": "2026-11-24"
@@ -24,11 +29,6 @@
       "id": "zK8rjACIiC4",
       "title": "i lost to a bot. on hard.",
       "published": "2026-09-29"
-    },
-    {
-      "id": "loFylygPQdU",
-      "title": "bugs i had to fix in my coral reef",
-      "published": "2026-09-28"
     }
   ]
 }
