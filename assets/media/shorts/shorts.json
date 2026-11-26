@@ -1,6 +1,11 @@
 {
   "shorts": [
     {
+      "id": "mDqYCuz1Gw8",
+      "title": "skill issue or robbery?",
+      "published": "2026-11-26"
+    },
+    {
       "id": "qCVZgaGmokc",
       "title": "the champ took 3. can you beat it?",
       "published": "2026-11-25"
@@ -24,11 +29,6 @@
       "id": "JEQbRvg6FRg",
       "title": "the bot aced it. so i had to.",
       "published": "2026-10-06"
-    },
-    {
-      "id": "zK8rjACIiC4",
-      "title": "i lost to a bot. on hard.",
-      "published": "2026-09-29"
     }
   ]
 }
