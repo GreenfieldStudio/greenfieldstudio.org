@@ -40,7 +40,8 @@ const PAGES = [
 
 // One page per Ambience film, written by tools/sync-ambience.mjs (the folder name is the film's slug).
 for (const e of existsSync(join(SITE, 'ambience')) ? readdirSync(join(SITE, 'ambience'), { withFileTypes: true }) : []) {
-  if (e.isDirectory() && existsSync(join(SITE, 'ambience', e.name, 'index.html'))) PAGES.push([`ambience/${e.name}/index.html`, '../../', 'ambience']);
+  // `live/` holds the standalone web-ambient scenes (own page shell, no site menu); they are not film pages
+  if (e.isDirectory() && e.name !== 'live' && existsSync(join(SITE, 'ambience', e.name, 'index.html'))) PAGES.push([`ambience/${e.name}/index.html`, '../../', 'ambience']);
 }
 
 const YT_STUDIO = 'https://www.youtube.com/@Greenfield.Studio';
